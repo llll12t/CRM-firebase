@@ -1,0 +1,1078 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - CRM-3RN</title>
+    <!-- Load config for Cloud Function URLs -->
+    <script src="config.js"></script> 
+    <!-- DaisyUI CDN (includes Tailwind CSS) -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@latest/dist/full.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .hidden { display: none !important; }
+        /* Basic styling for dashboard layout */
+        body { display: flex; min-height: 100vh; }
+        #sidebar { width: 250px; background-color: #333; color: white; padding: 20px; flex-shrink: 0; }
+        #main-content { flex-grow: 1; padding: 20px; background-color: #f0f2f5; }
+        #sidebar a { display: block; padding: 10px; margin-bottom: 5px; border-radius: 5px; color: white; text-decoration: none; }
+        #sidebar a:hover, #sidebar a.active { background-color: #555; }
+        .tab-content { padding: 20px 0; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
+        .form-group input[type="text"], .form-group input[type="number"], .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    </style>
+</head>
+<body class="font-sans">
+
+    <div id="sidebar">
+        <h1 class="text-2xl font-bold mb-8 text-center">Admin Panel</h1>
+        <nav>
+            <a href="#users" class="active" id="nav-users">ผู้ใช้งาน</a>
+            <a href="#items" id="nav-items">สินค้า/ของรางวัล</a>
+            <a href="#events" id="nav-events">กิจกรรม</a>
+            <a href="#codes" id="nav-codes">โค้ด</a>
+            <a href="#history" id="nav-history">ประวัติ</a>
+            <!-- <a href="#settings" id="nav-settings">Settings</a> -->
+        </nav>
+    </div>
+
+    <div id="main-content" class="min-h-screen">
+        <h2 id="page-title" class="text-3xl font-bold mb-6 text-gray-800"></h2>
+        <div id="content-area">
+            <!-- Content will be loaded here via JavaScript -->
+            <div class="text-center text-gray-500">Loading dashboard...</div>
+        </div>
+    </div>
+
+    <!-- Common Alert Dialog (from LIFF App) -->
+    <dialog id="customAlertDialog" class="modal">
+        <div class="modal-box text-center">
+            <h3 id="customAlertTitle" class="font-bold text-lg mb-3"></h3>
+            <p id="customAlertMessage" class="py-4 whitespace-pre-line"></p>
+            <div class="modal-action justify-center">
+                <button id="customAlertButton" class="btn btn-neutral w-full">ตกลง</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Common Confirm Dialog (from LIFF App) -->
+    <dialog id="customConfirmDialog" class="modal">
+        <div class="modal-box text-center">
+            <h3 id="customConfirmTitle" class="font-bold text-lg mb-3"></h3>
+            <p id="customConfirmMessage" class="py-4"></p>
+            <div class="modal-action justify-around">
+                <button id="customConfirmCancelButton" class="btn btn-outline btn-neutral">ยกเลิก</button>
+                <button id="customConfirmConfirmButton" class="btn btn-neutral">ยืนยัน</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- TEMPLATES FOR EACH SECTION -->
+
+    <!-- Users Template -->
+    <template id="template-users">
+        <div class="tab-content">
+            <h3 class="text-2xl font-semibold mb-4">ผู้ใช้งาน</h3>
+            <div class="flex items-center gap-4 mb-4">
+                <input type="text" id="user-search" placeholder="ค้นหาด้วย Line ID / ชื่อ / เบอร์โทร" class="input input-bordered flex-grow">
+                <button id="user-search-btn" class="btn btn-primary">ค้นหา</button>
+                <button id="user-reset-search-btn" class="btn btn-ghost">รีเซ็ต</button>
+            </div>
+            <div class="table-container bg-white p-4 rounded shadow">
+                <table class="table w-full">
+                    <thead>
+                        <tr>
+                            <th>Line ID</th>
+                            <th>ชื่อ</th>
+                            <th>เบอร์โทร</th>
+                            <th>แต้ม</th>
+                            <th>ระดับ</th>
+                            <th>ลงทะเบียนเมื่อ</th>
+                            <th>การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <tr><td colspan="7" class="text-center">กำลังโหลดผู้ใช้งาน...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4">
+                <button id="add-user-btn" class="btn btn-success">เพิ่มผู้ใช้งานใหม่ (Manual)</button>
+            </div>
+            <dialog id="user-detail-modal" class="modal">
+                <div class="modal-box max-w-2xl">
+                    <h3 class="font-bold text-lg" id="user-modal-title"></h3>
+                    <form id="user-detail-form" class="py-4 space-y-3">
+                        <input type="hidden" id="user-modal-lineid">
+                        <div class="form-group">
+                            <label>Line ID:</label>
+                            <input type="text" id="user-modal-display-lineid" readonly class="input input-bordered cursor-not-allowed">
+                        </div>
+                        <div class="form-group">
+                            <label>ชื่อ:</label>
+                            <input type="text" id="user-modal-name" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>เบอร์โทรศัพท์:</label>
+                            <input type="text" id="user-modal-phone" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>อีเมล:</label>
+                            <input type="text" id="user-modal-email" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>ที่อยู่:</label>
+                            <textarea id="user-modal-address" class="textarea textarea-bordered"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>หมายเหตุ:</label>
+                            <input type="text" id="user-modal-note" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>แต้ม:</label>
+                            <input type="number" id="user-modal-point" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>ระดับ:</label>
+                            <input type="text" id="user-modal-level" class="input input-bordered">
+                        </div>
+                        <div class="modal-action">
+                            <button type="submit" class="btn btn-primary">บันทึก</button>
+                            <button type="button" class="btn btn-ghost" onclick="document.getElementById('user-detail-modal').close()">ยกเลิก</button>
+                            <button type="button" id="user-delete-btn" class="btn btn-error">ลบผู้ใช้</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+    </template>
+
+    <!-- Items Template -->
+    <template id="template-items">
+        <div class="tab-content">
+            <h3 class="text-2xl font-semibold mb-4">สินค้า / ของรางวัล</h3>
+            <button id="add-item-btn" class="btn btn-success mb-4">เพิ่มของรางวัลใหม่</button>
+            <div class="table-container bg-white p-4 rounded shadow">
+                <table class="table w-full">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>ชื่อ</th>
+                            <th>แต้มที่ใช้</th>
+                            <th>รูปภาพ (URL)</th>
+                            <th>การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="items-table-body">
+                        <tr><td colspan="5" class="text-center">กำลังโหลดสินค้า...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <dialog id="item-detail-modal" class="modal">
+                <div class="modal-box max-w-xl">
+                    <h3 class="font-bold text-lg" id="item-modal-title"></h3>
+                    <form id="item-detail-form" class="py-4 space-y-3">
+                        <input type="hidden" id="item-modal-id">
+                        <div class="form-group">
+                            <label>ID:</label>
+                            <input type="text" id="item-modal-display-id" readonly class="input input-bordered cursor-not-allowed">
+                        </div>
+                        <div class="form-group">
+                            <label>ชื่อ:</label>
+                            <input type="text" id="item-modal-name" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>แต้มที่ใช้:</label>
+                            <input type="number" id="item-modal-point" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>URL รูปภาพ:</label>
+                            <input type="text" id="item-modal-image" class="input input-bordered">
+                            <img id="item-image-preview" src="" alt="Image Preview" class="mt-2 w-32 h-32 object-cover hidden rounded">
+                        </div>
+                        <div class="modal-action">
+                            <button type="submit" class="btn btn-primary">บันทึก</button>
+                            <button type="button" class="btn btn-ghost" onclick="document.getElementById('item-detail-modal').close()">ยกเลิก</button>
+                            <button type="button" id="item-delete-btn" class="btn btn-error hidden">ลบ</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+    </template>
+
+    <!-- Events Template -->
+    <template id="template-events">
+        <div class="tab-content">
+            <h3 class="text-2xl font-semibold mb-4">กิจกรรม</h3>
+            <button id="add-event-btn" class="btn btn-success mb-4">เพิ่มกิจกรรมใหม่</button>
+            <div class="table-container bg-white p-4 rounded shadow">
+                <table class="table w-full">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>ชื่อกิจกรรม</th>
+                            <th>แต้มที่ได้</th>
+                            <th>คำอธิบาย</th>
+                            <th>รูปภาพ (URL)</th>
+                            <th>การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events-table-body">
+                        <tr><td colspan="6" class="text-center">กำลังโหลดกิจกรรม...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <dialog id="event-detail-modal" class="modal">
+                <div class="modal-box max-w-xl">
+                    <h3 class="font-bold text-lg" id="event-modal-title"></h3>
+                    <form id="event-detail-form" class="py-4 space-y-3">
+                        <input type="hidden" id="event-modal-id">
+                        <div class="form-group">
+                            <label>ID:</label>
+                            <input type="text" id="event-modal-display-id" readonly class="input input-bordered cursor-not-allowed">
+                        </div>
+                        <div class="form-group">
+                            <label>ชื่อกิจกรรม:</label>
+                            <input type="text" id="event-modal-title-input" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>แต้มที่ได้:</label>
+                            <input type="number" id="event-modal-point" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>คำอธิบาย:</label>
+                            <textarea id="event-modal-desc" class="textarea textarea-bordered"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>URL รูปภาพ:</label>
+                            <input type="text" id="event-modal-image" class="input input-bordered">
+                            <img id="event-image-preview" src="" alt="Image Preview" class="mt-2 w-32 h-32 object-cover hidden rounded">
+                        </div>
+                        <div class="modal-action">
+                            <button type="submit" class="btn btn-primary">บันทึก</button>
+                            <button type="button" class="btn btn-ghost" onclick="document.getElementById('event-detail-modal').close()">ยกเลิก</button>
+                            <button type="button" id="event-delete-btn" class="btn btn-error hidden">ลบ</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+    </template>
+
+    <!-- Codes Template -->
+    <template id="template-codes">
+        <div class="tab-content">
+            <h3 class="text-2xl font-semibold mb-4">โค้ด</h3>
+            <button id="add-code-btn" class="btn btn-success mb-4">เพิ่มโค้ดใหม่</button>
+            <div class="table-container bg-white p-4 rounded shadow">
+                <table class="table w-full">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>ชื่อโค้ด</th>
+                            <th>แต้มที่ได้</th>
+                            <th>คำอธิบาย</th>
+                            <th>การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="codes-table-body">
+                        <tr><td colspan="5" class="text-center">กำลังโหลดโค้ด...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <dialog id="code-detail-modal" class="modal">
+                <div class="modal-box max-w-xl">
+                    <h3 class="font-bold text-lg" id="code-modal-title"></h3>
+                    <form id="code-detail-form" class="py-4 space-y-3">
+                        <input type="hidden" id="code-modal-id">
+                        <div class="form-group">
+                            <label>ID:</label>
+                            <input type="text" id="code-modal-display-id" readonly class="input input-bordered cursor-not-allowed">
+                        </div>
+                        <div class="form-group">
+                            <label>ชื่อโค้ด:</label>
+                            <input type="text" id="code-modal-title-input" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>แต้มที่ได้:</label>
+                            <input type="number" id="code-modal-point" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>คำอธิบาย:</label>
+                            <textarea id="code-modal-desc" class="textarea textarea-bordered"></textarea>
+                        </div>
+                        <div class="modal-action">
+                            <button type="submit" class="btn btn-primary">บันทึก</button>
+                            <button type="button" class="btn btn-ghost" onclick="document.getElementById('code-detail-modal').close()">ยกเลิก</button>
+                            <button type="button" id="code-delete-btn" class="btn btn-error hidden">ลบ</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+    </template>
+
+    <!-- History Template -->
+    <template id="template-history">
+        <div class="tab-content">
+            <h3 class="text-2xl font-semibold mb-4">ประวัติการทำรายการ</h3>
+            <div class="flex items-center gap-4 mb-4">
+                <input type="text" id="history-lineid-search" placeholder="ค้นหาด้วย Line ID" class="input input-bordered w-1/3">
+                <select id="history-type-filter" class="select select-bordered">
+                    <option value="">ทั้งหมด</option>
+                    <option value="checkin">เช็คอิน</option>
+                    <option value="redeem">แลกของรางวัล</option>
+                    <option value="transfer_out">โอนออก</option>
+                    <option value="transfer_in">โอนเข้า</option>
+                    <option value="event">กิจกรรม</option>
+                    <option value="code">โค้ด</option>
+                </select>
+                <input type="date" id="history-start-date" class="input input-bordered">
+                <input type="date" id="history-end-date" class="input input-bordered">
+                <button id="history-filter-btn" class="btn btn-primary">กรอง</button>
+                <button id="history-reset-filter-btn" class="btn btn-ghost">รีเซ็ต</button>
+            </div>
+            <div class="table-container bg-white p-4 rounded shadow">
+                <table class="table w-full">
+                    <thead>
+                        <tr>
+                            <th>Line ID</th>
+                            <th>ประเภท</th>
+                            <th>รายละเอียด</th>
+                            <th>จำนวนแต้ม</th>
+                            <th>วันที่</th>
+                            <th>Ref ID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <tr><td colspan="6" class="text-center">กำลังโหลดประวัติ...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </template>
+
+    <script>
+        // Common Alert Dialog references (Copied from LIFF App, ensure consistency)
+        const alertDialog = document.getElementById('customAlertDialog');
+        const alertT = document.getElementById('customAlertTitle');
+        const alertM = document.getElementById('customAlertMessage');
+        const alertBtn = document.getElementById('customAlertButton');
+
+        const confirmDialog = document.getElementById('customConfirmDialog');
+        const confT = document.getElementById('customConfirmTitle');
+        const confM = document.getElementById('customConfirmMessage');
+        const okBtn = document.getElementById('customConfirmConfirmButton');
+        const noBtn = document.getElementById('customConfirmCancelButton');
+
+        function showAlert(title, message, cb) {
+            alertT.textContent = title;
+            alertM.textContent = message;
+            alertDialog.showModal();
+
+            const hide = () => {
+                alertDialog.close();
+                alertBtn.removeEventListener('click', hide);
+                cb && cb();
+            };
+            alertBtn.addEventListener('click', hide);
+        }
+
+        function showConfirm(title, message) {
+            return new Promise(res => {
+                confT.textContent = title;
+                confM.textContent = message;
+                confirmDialog.showModal();
+
+                const onOk = () => { cleanup(); res(true); };
+                const onNo = () => { cleanup(); res(false); };
+
+                function cleanup() {
+                    confirmDialog.close();
+                    okBtn.removeEventListener('click', onOk);
+                    noBtn.removeEventListener('click', onNo);
+                }
+                okBtn.addEventListener('click', onOk);
+                noBtn.addEventListener('click', onNo);
+            });
+        }
+
+        // Global DOM Elements
+        const pageTitleEl = document.getElementById('page-title');
+        const contentArea = document.getElementById('content-area');
+        const sidebarNavs = document.querySelectorAll('#sidebar nav a');
+
+        // Simple Router
+        const routes = {
+            '#users': { title: 'จัดการผู้ใช้งาน', template: 'template-users', init: initUsers },
+            '#items': { title: 'จัดการสินค้า / ของรางวัล', template: 'template-items', init: initItems },
+            '#events': { title: 'จัดการกิจกรรม', template: 'template-events', init: initEvents },
+            '#codes': { title: 'จัดการโค้ด', template: 'template-codes', init: initCodes },
+            '#history': { title: 'ประวัติการทำรายการ', template: 'template-history', init: initHistory },
+            '': { title: 'ผู้ใช้งาน', template: 'template-users', init: initUsers } // Default to users
+        };
+
+        async function router() {
+            const hash = window.location.hash || '';
+            const route = routes[hash] || routes[''];
+
+            // Update active sidebar link
+            sidebarNavs.forEach(nav => {
+                nav.classList.remove('active');
+                if (nav.getAttribute('href') === hash || (hash === '' && nav.getAttribute('href') === '#users')) {
+                    nav.classList.add('active');
+                }
+            });
+
+            pageTitleEl.textContent = route.title;
+            contentArea.innerHTML = ''; // Clear previous content
+
+            const template = document.getElementById(route.template);
+            if (template) {
+                contentArea.appendChild(template.content.cloneNode(true));
+            } else {
+                contentArea.innerHTML = `<p class="text-center text-red-500">Template for ${route.title} not found.</p>`;
+                console.error(`Template ${route.template} not found.`);
+                return;
+            }
+
+            try {
+                await route.init();
+            } catch (error) {
+                console.error(`Error initializing view ${route.template}:`, error);
+                showAlert('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลหน้านี้ได้ กรุณาลองใหม่อีกครั้ง');
+            }
+        }
+
+        // --- Helper for making API calls to Cloud Functions ---
+        async function callApi(action, method = 'GET', data = null, isJson = true) {
+            let url;
+            let options = { method: method };
+
+            if (method === 'GET') {
+                url = `${CONFIG.CLOUD_FUNCTION_GET_URL}?action=${action}`;
+                if (data) {
+                    const params = new URLSearchParams(data).toString();
+                    url += `&${params}`;
+                }
+            } else if (method === 'POST') {
+                url = CONFIG.CLOUD_FUNCTION_POST_URL;
+                options.headers = {
+                    'Content-Type': 'application/json',
+                };
+                options.body = JSON.stringify({ action: action, ...data });
+            } else if (method === 'DELETE') { // Assuming DELETE also uses POST endpoint with action: 'deleteXxx'
+                url = CONFIG.CLOUD_FUNCTION_POST_URL;
+                options.headers = {
+                    'Content-Type': 'application/json',
+                };
+                options.body = JSON.stringify({ action: action, ...data });
+            }
+
+
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    let errorBody;
+                    try {
+                        errorBody = await response.json();
+                    } catch {
+                        errorBody = { error: await response.text() };
+                    }
+                    throw new Error(`HTTP Error! Status: ${response.status} - ${errorBody.error || errorBody}`);
+                }
+                // Cloud Functions may return text for some POSTs, JSON for others
+                if (isJson) {
+                    return await response.json();
+                } else {
+                    return await response.text();
+                }
+            } catch (error) {
+                console.error("API call failed:", error);
+                showAlert("ข้อผิดพลาด API", `ไม่สามารถเชื่อมต่อ/ประมวลผลข้อมูล: ${error.message}`);
+                throw error; // Re-throw to propagate error to calling function
+            }
+        }
+
+        // --- View Initialization Functions ---
+
+        async function initUsers() {
+            const tableBody = document.getElementById('users-table-body');
+            const searchInput = document.getElementById('user-search');
+            const searchBtn = document.getElementById('user-search-btn');
+            const resetSearchBtn = document.getElementById('user-reset-search-btn');
+            const addUserBtn = document.getElementById('add-user-btn');
+            const userDetailModal = document.getElementById('user-detail-modal');
+            const userDetailForm = document.getElementById('user-detail-form');
+            const userDeleteBtn = document.getElementById('user-delete-btn');
+
+            let allUsers = []; // Cache for current filtered/searched users
+
+            async function loadUsers(query = {}) {
+                tableBody.innerHTML = `<tr><td colspan="7" class="text-center">กำลังโหลดผู้ใช้งาน...</td></tr>`;
+                try {
+                    // *** Backend: ต้องสร้าง Cloud Function `getUsers` ที่ดึงผู้ใช้ทั้งหมดหรือตาม query ***
+                    // ตัวอย่าง Query ใน Cloud Function: db.collection('users').where('name', '>=', query).where('name', '<=', query + '~').get();
+                    // หรือถ้าไม่มี query ก็ db.collection('users').get();
+                    const users = await callApi('getUsers', 'GET', query); // สมมติว่ามี action 'getUsers'
+                    allUsers = users; // Store for local filtering/detail
+                    renderUsers(users);
+                } catch (error) {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดผู้ใช้งาน</td></tr>`;
+                }
+            }
+
+            function renderUsers(usersToRender) {
+                if (usersToRender.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center">ไม่พบผู้ใช้งาน</td></tr>`;
+                    return;
+                }
+                tableBody.innerHTML = usersToRender.map(user => `
+                    <tr>
+                        <td>${user.lineId || user.id}</td>
+                        <td>${user.name || '-'}</td>
+                        <td>${user.phone || '-'}</td>
+                        <td>${user.point || 0}</td>
+                        <td>${user.level || '-'}</td>
+                        <td>${user.signupDate || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info view-user-btn" data-lineid="${user.lineId || user.id}">ดู/แก้ไข</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                document.querySelectorAll('.view-user-btn').forEach(button => {
+                    button.onclick = (e) => showUserDetail(e.target.dataset.lineid);
+                });
+            }
+
+            async function showUserDetail(lineId) {
+                const user = allUsers.find(u => (u.lineId || u.id) === lineId);
+                if (!user) {
+                    showAlert('ไม่พบข้อมูล', 'ไม่พบข้อมูลผู้ใช้งานนี้');
+                    return;
+                }
+
+                document.getElementById('user-modal-title').textContent = user.name ? `แก้ไขผู้ใช้งาน: ${user.name}` : 'เพิ่มผู้ใช้งานใหม่';
+                document.getElementById('user-modal-lineid').value = user.lineId || user.id;
+                document.getElementById('user-modal-display-lineid').value = user.lineId || user.id;
+                document.getElementById('user-modal-name').value = user.name || '';
+                document.getElementById('user-modal-phone').value = user.phone || '';
+                document.getElementById('user-modal-email').value = user.email || '';
+                document.getElementById('user-modal-address').value = user.address || '';
+                document.getElementById('user-modal-note').value = user.note || '';
+                document.getElementById('user-modal-point').value = user.point || 0;
+                document.getElementById('user-modal-level').value = user.level || 'Member';
+
+                // Handle Add vs Edit mode
+                userDeleteBtn.classList.toggle('hidden', !lineId); // Show delete button only if editing existing user
+
+                userDetailModal.showModal();
+            }
+
+            userDetailForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const lineId = document.getElementById('user-modal-lineid').value;
+                const isNewUser = !lineId; // If lineId is empty, it's a new user
+
+                const userData = {
+                    lineId: lineId || '', // For new user, it will be blank, Cloud Function will generate
+                    name: document.getElementById('user-modal-name').value,
+                    phone: document.getElementById('user-modal-phone').value,
+                    email: document.getElementById('user-modal-email').value,
+                    address: document.getElementById('user-modal-address').value,
+                    note: document.getElementById('user-modal-note').value,
+                    point: parseInt(document.getElementById('user-modal-point').value, 10),
+                    level: document.getElementById('user-modal-level').value
+                };
+
+                const action = isNewUser ? 'registerAdmin' : 'updateUserAdmin'; // Backend actions
+
+                const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNewUser ? 'เพิ่ม' : 'อัปเดต'} ผู้ใช้งานนี้หรือไม่?`);
+                if (!confirmed) return;
+
+                try {
+                    const res = await callApi(action, 'POST', userData, false); // Expect text response
+                    showAlert('สถานะ', res, () => {
+                        userDetailModal.close();
+                        loadUsers(); // Reload user list
+                    });
+                } catch (error) {
+                    // Error handled in callApi
+                }
+            };
+
+            userDeleteBtn.onclick = async () => {
+                const lineId = document.getElementById('user-modal-lineid').value;
+                const confirmed = await showConfirm('ยืนยันการลบ', `คุณแน่ใจหรือไม่ที่จะลบผู้ใช้งาน Line ID: ${lineId}? การดำเนินการนี้ไม่สามารถย้อนกลับได้`);
+                if (!confirmed) return;
+
+                try {
+                    // *** Backend: ต้องสร้าง Cloud Function `deleteUser` ที่ลบผู้ใช้ด้วย Line ID ***
+                    const res = await callApi('deleteUser', 'DELETE', { lineId: lineId }, false); // Expect text response
+                    showAlert('สถานะ', res, () => {
+                        userDetailModal.close();
+                        loadUsers(); // Reload user list
+                    });
+                } catch (error) {
+                    // Error handled in callApi
+                }
+            };
+
+            addUserBtn.onclick = () => {
+                document.getElementById('user-modal-title').textContent = 'เพิ่มผู้ใช้งานใหม่ (Manual)';
+                userDetailForm.reset();
+                document.getElementById('user-modal-lineid').value = ''; // Ensure lineId is empty for new user
+                document.getElementById('user-modal-display-lineid').value = 'จะถูกสร้างอัตโนมัติ';
+                document.getElementById('user-modal-point').value = 0; // Default points
+                document.getElementById('user-modal-level').value = 'Member'; // Default level
+                userDeleteBtn.classList.add('hidden'); // Hide delete button for new user
+                userDetailModal.showModal();
+            };
+
+            searchBtn.onclick = () => {
+                const query = searchInput.value.trim();
+                loadUsers({ query: query });
+            };
+
+            resetSearchBtn.onclick = () => {
+                searchInput.value = '';
+                loadUsers();
+            };
+
+            loadUsers(); // Initial load
+        }
+
+        async function initItems() {
+            const tableBody = document.getElementById('items-table-body');
+            const addItemBtn = document.getElementById('add-item-btn');
+            const itemDetailModal = document.getElementById('item-detail-modal');
+            const itemDetailForm = document.getElementById('item-detail-form');
+            const itemDeleteBtn = document.getElementById('item-delete-btn');
+            const itemImagePreview = document.getElementById('item-image-preview');
+            const itemImageInput = document.getElementById('item-modal-image');
+
+            let allItems = [];
+
+            async function loadItems() {
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center">กำลังโหลดสินค้า...</td></tr>`;
+                try {
+                    const items = await callApi('getItems', 'GET');
+                    allItems = items;
+                    renderItems(items);
+                } catch (error) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดสินค้า</td></tr>`;
+                }
+            }
+
+            function renderItems(itemsToRender) {
+                if (itemsToRender.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center">ไม่พบสินค้า/ของรางวัล</td></tr>`;
+                    return;
+                }
+                tableBody.innerHTML = itemsToRender.map(item => `
+                    <tr>
+                        <td>${item.id}</td>
+                        <td>${item.name}</td>
+                        <td>${item.point}</td>
+                        <td><img src="${item.image}" class="w-12 h-12 object-cover rounded" onerror="this.style.display='none';"></td>
+                        <td>
+                            <button class="btn btn-sm btn-info view-item-btn" data-id="${item.id}">ดู/แก้ไข</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                document.querySelectorAll('.view-item-btn').forEach(button => {
+                    button.onclick = (e) => showItemDetail(e.target.dataset.id);
+                });
+            }
+
+            function showItemDetail(id) {
+                const item = allItems.find(i => i.id === id);
+                document.getElementById('item-modal-title').textContent = item ? `แก้ไขสินค้า: ${item.name}` : 'เพิ่มสินค้าใหม่';
+                itemDetailForm.reset();
+                itemImagePreview.classList.add('hidden');
+                itemDeleteBtn.classList.add('hidden'); // Default hide delete
+
+                if (item) {
+                    document.getElementById('item-modal-id').value = item.id;
+                    document.getElementById('item-modal-display-id').value = item.id;
+                    document.getElementById('item-modal-name').value = item.name;
+                    document.getElementById('item-modal-point').value = item.point;
+                    document.getElementById('item-modal-image').value = item.image;
+                    if (item.image) {
+                        itemImagePreview.src = item.image;
+                        itemImagePreview.classList.remove('hidden');
+                    }
+                    itemDeleteBtn.classList.remove('hidden'); // Show delete if editing
+                } else { // New Item
+                    document.getElementById('item-modal-id').value = '';
+                    document.getElementById('item-modal-display-id').value = 'จะถูกสร้างอัตโนมัติ';
+                }
+                itemDetailModal.showModal();
+            }
+
+            itemDetailForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('item-modal-id').value;
+                const isNew = !id;
+                const itemData = {
+                    id: id,
+                    name: document.getElementById('item-modal-name').value,
+                    point: parseInt(document.getElementById('item-modal-point').value, 10),
+                    image: document.getElementById('item-modal-image').value
+                };
+
+                const action = isNew ? 'addItem' : 'updateItem';
+                const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNew ? 'เพิ่ม' : 'อัปเดต'} สินค้านี้หรือไม่?`);
+                if (!confirmed) return;
+
+                try {
+                    const res = await callApi(action, 'POST', itemData, false);
+                    showAlert('สถานะ', res, () => {
+                        itemDetailModal.close();
+                        loadItems();
+                    });
+                } catch (error) {}
+            };
+
+            itemDeleteBtn.onclick = async () => {
+                const id = document.getElementById('item-modal-id').value;
+                const confirmed = await showConfirm('ยืนยันการลบ', `คุณแน่ใจหรือไม่ที่จะลบสินค้า ID: ${id}?`);
+                if (!confirmed) return;
+
+                try {
+                    // *** Backend: ต้องสร้าง Cloud Function `deleteItem` ที่ลบสินค้าด้วย ID ***
+                    const res = await callApi('deleteItem', 'DELETE', { id: id }, false);
+                    showAlert('สถานะ', res, () => {
+                        itemDetailModal.close();
+                        loadItems();
+                    });
+                } catch (error) {}
+            };
+
+            addItemBtn.onclick = () => showItemDetail(null);
+            itemImageInput.oninput = () => {
+                if (itemImageInput.value) {
+                    itemImagePreview.src = itemImageInput.value;
+                    itemImagePreview.classList.remove('hidden');
+                } else {
+                    itemImagePreview.classList.add('hidden');
+                }
+            };
+
+            loadItems();
+        }
+
+        async function initEvents() {
+            const tableBody = document.getElementById('events-table-body');
+            const addEventBtn = document.getElementById('add-event-btn');
+            const eventDetailModal = document.getElementById('event-detail-modal');
+            const eventDetailForm = document.getElementById('event-detail-form');
+            const eventDeleteBtn = document.getElementById('event-delete-btn');
+            const eventImagePreview = document.getElementById('event-image-preview');
+            const eventImageInput = document.getElementById('event-modal-image');
+
+            let allEvents = [];
+
+            async function loadEvents() {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center">กำลังโหลดกิจกรรม...</td></tr>`;
+                try {
+                    const events = await callApi('getEvents', 'GET');
+                    allEvents = events;
+                    renderEvents(events);
+                } catch (error) {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดกิจกรรม</td></tr>`;
+                }
+            }
+
+            function renderEvents(eventsToRender) {
+                if (eventsToRender.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center">ไม่พบกิจกรรม</td></tr>`;
+                    return;
+                }
+                tableBody.innerHTML = eventsToRender.map(event => `
+                    <tr>
+                        <td>${event.id}</td>
+                        <td>${event.title}</td>
+                        <td>${event.point}</td>
+                        <td>${event.desc || '-'}</td>
+                        <td><img src="${event.image}" class="w-12 h-12 object-cover rounded" onerror="this.style.display='none';"></td>
+                        <td>
+                            <button class="btn btn-sm btn-info view-event-btn" data-id="${event.id}">ดู/แก้ไข</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                document.querySelectorAll('.view-event-btn').forEach(button => {
+                    button.onclick = (e) => showEventDetail(e.target.dataset.id);
+                });
+            }
+
+            function showEventDetail(id) {
+                const event = allEvents.find(e => e.id === id);
+                document.getElementById('event-modal-title').textContent = event ? `แก้ไขกิจกรรม: ${event.title}` : 'เพิ่มกิจกรรมใหม่';
+                eventDetailForm.reset();
+                eventImagePreview.classList.add('hidden');
+                eventDeleteBtn.classList.add('hidden'); // Default hide delete
+
+                if (event) {
+                    document.getElementById('event-modal-id').value = event.id;
+                    document.getElementById('event-modal-display-id').value = event.id;
+                    document.getElementById('event-modal-title-input').value = event.title;
+                    document.getElementById('event-modal-point').value = event.point;
+                    document.getElementById('event-modal-desc').value = event.desc;
+                    document.getElementById('event-modal-image').value = event.image;
+                    if (event.image) {
+                        eventImagePreview.src = event.image;
+                        eventImagePreview.classList.remove('hidden');
+                    }
+                    eventDeleteBtn.classList.remove('hidden');
+                } else { // New Event
+                    document.getElementById('event-modal-id').value = '';
+                    document.getElementById('event-modal-display-id').value = 'จะถูกสร้างอัตโนมัติ';
+                }
+                eventDetailModal.showModal();
+            }
+
+            eventDetailForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('event-modal-id').value;
+                const isNew = !id;
+                const eventData = {
+                    id: id,
+                    title: document.getElementById('event-modal-title-input').value,
+                    point: parseInt(document.getElementById('event-modal-point').value, 10),
+                    desc: document.getElementById('event-modal-desc').value,
+                    image: document.getElementById('event-modal-image').value
+                };
+
+                const action = isNew ? 'addEvent' : 'updateEvent';
+                const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNew ? 'เพิ่ม' : 'อัปเดต'} กิจกรรมนี้หรือไม่?`);
+                if (!confirmed) return;
+
+                try {
+                    const res = await callApi(action, 'POST', eventData, false);
+                    showAlert('สถานะ', res, () => {
+                        eventDetailModal.close();
+                        loadEvents();
+                    });
+                } catch (error) {}
+            };
+
+            eventDeleteBtn.onclick = async () => {
+                const id = document.getElementById('event-modal-id').value;
+                const confirmed = await showConfirm('ยืนยันการลบ', `คุณแน่ใจหรือไม่ที่จะลบกิจกรรม ID: ${id}?`);
+                if (!confirmed) return;
+
+                try {
+                    // *** Backend: ต้องสร้าง Cloud Function `deleteEvent` ที่ลบกิจกรรมด้วย ID ***
+                    const res = await callApi('deleteEvent', 'DELETE', { id: id }, false);
+                    showAlert('สถานะ', res, () => {
+                        eventDetailModal.close();
+                        loadEvents();
+                    });
+                } catch (error) {}
+            };
+
+            addEventBtn.onclick = () => showEventDetail(null);
+            eventImageInput.oninput = () => {
+                if (eventImageInput.value) {
+                    eventImagePreview.src = eventImageInput.value;
+                    eventImagePreview.classList.remove('hidden');
+                } else {
+                    eventImagePreview.classList.add('hidden');
+                }
+            };
+
+            loadEvents();
+        }
+
+        async function initCodes() {
+            const tableBody = document.getElementById('codes-table-body');
+            const addCodeBtn = document.getElementById('add-code-btn');
+            const codeDetailModal = document.getElementById('code-detail-modal');
+            const codeDetailForm = document.getElementById('code-detail-form');
+            const codeDeleteBtn = document.getElementById('code-delete-btn');
+
+            let allCodes = [];
+
+            async function loadCodes() {
+                tableBody.innerHTML = `<tr><td colspan="5" class="text-center">กำลังโหลดโค้ด...</td></tr>`;
+                try {
+                    const codes = await callApi('getCodes', 'GET'); // *** Backend: ต้องสร้าง Cloud Function `getCodes` ***
+                    allCodes = codes;
+                    renderCodes(codes);
+                } catch (error) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดโค้ด</td></tr>`;
+                }
+            }
+
+            function renderCodes(codesToRender) {
+                if (codesToRender.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center">ไม่พบโค้ด</td></tr>`;
+                    return;
+                }
+                tableBody.innerHTML = codesToRender.map(code => `
+                    <tr>
+                        <td>${code.id}</td>
+                        <td>${code.title}</td>
+                        <td>${code.point}</td>
+                        <td>${code.desc || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info view-code-btn" data-id="${code.id}">ดู/แก้ไข</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                document.querySelectorAll('.view-code-btn').forEach(button => {
+                    button.onclick = (e) => showCodeDetail(e.target.dataset.id);
+                });
+            }
+
+            function showCodeDetail(id) {
+                const code = allCodes.find(c => c.id === id);
+                document.getElementById('code-modal-title').textContent = code ? `แก้ไขโค้ด: ${code.title}` : 'เพิ่มโค้ดใหม่';
+                codeDetailForm.reset();
+                codeDeleteBtn.classList.add('hidden');
+
+                if (code) {
+                    document.getElementById('code-modal-id').value = code.id;
+                    document.getElementById('code-modal-display-id').value = code.id;
+                    document.getElementById('code-modal-title-input').value = code.title;
+                    document.getElementById('code-modal-point').value = code.point;
+                    document.getElementById('code-modal-desc').value = code.desc;
+                    codeDeleteBtn.classList.remove('hidden');
+                } else { // New Code
+                    document.getElementById('code-modal-id').value = '';
+                    document.getElementById('code-modal-display-id').value = 'จะถูกสร้างอัตโนมัติ';
+                }
+                codeDetailModal.showModal();
+            }
+
+            codeDetailForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('code-modal-id').value;
+                const isNew = !id;
+                const codeData = {
+                    id: id,
+                    title: document.getElementById('code-modal-title-input').value,
+                    point: parseInt(document.getElementById('code-modal-point').value, 10),
+                    desc: document.getElementById('code-modal-desc').value
+                };
+
+                const action = isNew ? 'addCode' : 'updateCode';
+                const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNew ? 'เพิ่ม' : 'อัปเดต'} โค้ดนี้หรือไม่?`);
+                if (!confirmed) return;
+
+                try {
+                    const res = await callApi(action, 'POST', codeData, false);
+                    showAlert('สถานะ', res, () => {
+                        codeDetailModal.close();
+                        loadCodes();
+                    });
+                } catch (error) {}
+            };
+
+            codeDeleteBtn.onclick = async () => {
+                const id = document.getElementById('code-modal-id').value;
+                const confirmed = await showConfirm('ยืนยันการลบ', `คุณแน่ใจหรือไม่ที่จะลบโค้ด ID: ${id}?`);
+                if (!confirmed) return;
+
+                try {
+                    // *** Backend: ต้องสร้าง Cloud Function `deleteCode` ที่ลบโค้ดด้วย ID ***
+                    const res = await callApi('deleteCode', 'DELETE', { id: id }, false);
+                    showAlert('สถานะ', res, () => {
+                        codeDetailModal.close();
+                        loadCodes();
+                    });
+                } catch (error) {}
+            };
+
+            addCodeBtn.onclick = () => showCodeDetail(null);
+
+            loadCodes();
+        }
+
+        async function initHistory() {
+            const tableBody = document.getElementById('history-table-body');
+            const lineIdSearchInput = document.getElementById('history-lineid-search');
+            const typeFilterSelect = document.getElementById('history-type-filter');
+            const startDateInput = document.getElementById('history-start-date');
+            const endDateInput = document.getElementById('history-end-date');
+            const filterBtn = document.getElementById('history-filter-btn');
+            const resetFilterBtn = document.getElementById('history-reset-filter-btn');
+
+            async function loadHistory(filters = {}) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center">กำลังโหลดประวัติ...</td></tr>`;
+                try {
+                    // *** Backend: ต้องสร้าง Cloud Function `getAllHistory` ที่รองรับ filter ด้วย ***
+                    // ตัวอย่าง Query ใน Cloud Function: db.collection('points_history').where('lineId', '==', filters.lineId).where('type', '==', filters.type).where('date', '>=', startDate).get();
+                    const history = await callApi('getAllHistory', 'GET', filters); // สมมติว่ามี action 'getAllHistory'
+                    renderHistory(history);
+                } catch (error) {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดประวัติ</td></tr>`;
+                }
+            }
+
+            function renderHistory(historyToRender) {
+                if (historyToRender.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center">ไม่พบประวัติการทำรายการ</td></tr>`;
+                    return;
+                }
+                tableBody.innerHTML = historyToRender.map(item => `
+                    <tr>
+                        <td>${item.lineId || '-'}</td>
+                        <td>${item.type || '-'}</td>
+                        <td>${item.detail || '-'}</td>
+                        <td>${item.amount || 0}</td>
+                        <td>${item.date || '-'}</td>
+                        <td>${item.refId || '-'}</td>
+                    </tr>
+                `).join('');
+            }
+
+            filterBtn.onclick = () => {
+                const filters = {
+                    lineId: lineIdSearchInput.value.trim(),
+                    type: typeFilterSelect.value,
+                    startDate: startDateInput.value,
+                    endDate: endDateInput.value
+                };
+                loadHistory(filters);
+            };
+
+            resetFilterBtn.onclick = () => {
+                lineIdSearchInput.value = '';
+                typeFilterSelect.value = '';
+                startDateInput.value = '';
+                endDateInput.value = '';
+                loadHistory();
+            };
+
+            loadHistory();
+        }
+
+        // --- Main Initialization ---
+        document.addEventListener('DOMContentLoaded', () => {
+            // Setup sidebar navigation
+            sidebarNavs.forEach(nav => {
+                nav.addEventListener('click', (e) => {
+                    e.preventDefault();
+                    window.location.hash = nav.getAttribute('href');
+                });
+            });
+
+            // Initial route load
+            router();
+            window.addEventListener('hashchange', router);
+        });
+    </script>
+</body>
+</html>
