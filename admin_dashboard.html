@@ -534,11 +534,12 @@
                 }
             }
 
-            function renderUsers(usersToRender) {
-                if (usersToRender.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center">ไม่พบผู้ใช้งาน</td></tr>`;
-                    return;
-                }
+         function renderUsers(usersToRender) {
+    console.log("Users to render:", usersToRender); // <--- เพิ่มบรรทัดนี้
+    if (usersToRender.length === 0) {
+        tableBody.innerHTML = `<tr><td colspan="7" class="text-center">ไม่พบผู้ใช้งาน</td></tr>`;
+        return;
+    }
                 tableBody.innerHTML = usersToRender.map(user => `
                     <tr>
                         <td>${user.lineId || user.id || '-'}</td>
