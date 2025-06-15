@@ -322,8 +322,7 @@
     <template id="view-history">
         <h2 class="text-xl font-bold mb-4">ประวัติการทำรายการ</h2>
         <div class="flex col-2 space-x-2 ">
-            <input type="text" id="historySearchLineId" placeholder="ค้นหาด้วย Line ID"
-                class="input input-bordered flex-grow" />
+            <input type="text" id="historySearchLineId" placeholder="ค้นหา Line ID"class="input input-bordered flex-grow" />
             <select id="historyFilterType" class="select select-bordered ">
                 <option value="">ประเภททั้งหมด</option>
                 <option value="checkin">เช็คอิน</option>
@@ -350,10 +349,10 @@
             </div>
         </div>
         <div class="flex col-2 space-x-2 mb-4">
-
-            <button id="historyFilterBtn" class="btn btn-primary w-full md:w-auto">กรอง</button>
-            <button id="historyResetBtn" class="btn btn-outline w-full md:w-auto">รีเซ็ต</button>
+            <button id="historyFilterBtn" class="btn btn-primary">กรอง</button>
+            <button id="historyResetBtn" class="btn btn-outline">รีเซ็ต</button>
         </div>
+        
         <div class="table-responsive rounded-lg border border-base-300 ">
             <table class="table w-full table-zebra">
                 <thead>
