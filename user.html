@@ -312,7 +312,8 @@
 
                 console.log("Generated HTML for users table body:", rowsHtml); 
 
-                tableBody.innerHTML = rowsHtml; 
+                tableBody.innerHTML = ''; // Clear it first (optional, but good practice)
+                tableBody.insertAdjacentHTML('beforeend', rowsHtml); // Appends the HTML safely
 
                 document.querySelectorAll('.view-user-btn').forEach(button => {
                     button.onclick = (e) => showUserDetail(e.target.dataset.lineid);
