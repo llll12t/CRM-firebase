@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - ประวัติการทำรายการ</title>
+    <script src="config.js"></script> 
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@latest/dist/full.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .hidden { display: none !important; }
+        body { display: flex; min-height: 100vh; font-family: sans-serif; background-color: #f8fafc; }
+        #sidebar { width: 250px; background-color: #e2e8f0; color: #1a202c; padding: 20px; flex-shrink: 0; border-right: 1px solid #cbd5e0; }
+        #main-content { flex-grow: 1; padding: 20px; background-color: #ffffff; }
+        #sidebar a { 
+            display: block; padding: 10px; margin-bottom: 5px; border-radius: 5px; 
+            background-color: #4a5568; 
+            color: white; text-decoration: none; transition: background-color 0.2s;
+            font-weight: 500;
+        }
+        #sidebar a:hover { background-color: #2d3748; }
+        #sidebar a.active { background-color: #1a202c; } 
+
+        .tab-content { padding: 20px 0; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
+        th { background-color: #edf2f7; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input[type="text"], .form-group input[type="number"], 
+        .form-group input[type="email"], .form-group input[type="tel"],
+        .form-group input[type="date"], .form-group textarea,
+        .form-group .input, .form-group .textarea, .form-group .select { 
+            width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        .input.input-bordered, .textarea.textarea-bordered, .select.select-bordered {
+            border-color: #d1d5db; 
+        }
+        .btn { transition: background-color 0.2s, color 0.2s; }
+        .btn.btn-neutral { background-color: #1a202c; color: white; border-color: #1a202c; }
+        .btn.btn-neutral:hover { background-color: #2d3748; border-color: #2d3748; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h1 class="text-2xl font-bold mb-8 text-center text-gray-800">Admin Panel</h1>
+        <nav>
+            <a href="users.html" id="nav-users">ผู้ใช้งาน</a>
+            <a href="items.html" id="nav-items">สินค้า/ของรางวัล</a>
+            <a href="events.html" id="nav-events">กิจกรรม</a>
+            <a href="codes.html" id="nav-codes">โค้ด</a>
+            <a href="history.html" class="active" id="nav-history">ประวัติ</a>
+        </nav>
+    </div>
+
+    <div id="main-content" class="min-h-screen">
+        <h2 id="page-title" class="text-3xl font-bold mb-6 text-gray-800">ประวัติการทำรายการ</h2>
+        
+        <div class="tab-content">
+            <h3 class="text-2xl font-semibold mb-4">ประวัติการทำรายการ</h3>
+            <div class="flex flex-wrap items-center gap-4 mb-4">
+                <input type="text" id="history-lineid-search" placeholder="ค้นหาด้วย Line ID" class="input input-bordered">
+                <select id="history-type-filter" class="select select-bordered">
+                    <option value="">ทั้งหมด</option>
+                    <option value="checkin">เช็คอิน</option>
+                    <option value="redeem">แลกของรางวัล</option>
+                    <option value="transfer_out">โอนออก</option>
+                    <option value="transfer_in">โอนเข้า</option>
+                    <option value="event">กิจกรรม</option>
+                    <option value="code">โค้ด</option>
+                </select>
+                <input type="date" id="history-start-date" class="input input-bordered">
+                <input type="date" id="history-end-date" class="input input-bordered">
+                <button id="history-filter-btn" class="btn btn-neutral">กรอง</button>
+                <button id="history-reset-filter-btn" class="btn btn-ghost">รีเซ็ต</button>
+            </div>
+            <div class="table-container bg-white p-4 rounded shadow">
+                <table class="table w-full">
+                    <thead>
+                        <tr>
+                            <th>Line ID</th>
+                            <th>ประเภท</th>
+                            <th>รายละเอียด</th>
+                            <th>จำนวนแต้ม</th>
+                            <th>วันที่</th>
+                            <th>Ref ID</th>
+                        </tr>
+                    </thead>
+                    <tbody id="history-table-body">
+                        <tr><td colspan="6" class="text-center">กำลังโหลดประวัติ...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Common Alert Dialog -->
+    <dialog id="customAlertDialog" class="modal">
+        <div class="modal-box text-center">
+            <h3 id="customAlertTitle" class="font-bold text-lg mb-3"></h3>
+            <p id="customAlertMessage" class="py-4 whitespace-pre-line"></p>
+            <div class="modal-action justify-center">
+                <button id="customAlertButton" class="btn btn-neutral w-full">ตกลง</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Common Confirm Dialog -->
+    <dialog id="customConfirmDialog" class="modal">
+        <div class="modal-box text-center">
+            <h3 id="customConfirmTitle" class="font-bold text-lg mb-3"></h3>
+            <p id="customConfirmMessage" class="py-4"></p>
+            <div class="modal-action justify-around">
+                <button id="customConfirmCancelButton" class="btn btn-outline btn-neutral">ยกเลิก</button>
+                <button id="customConfirmConfirmButton" class="btn btn-neutral">ยืนยัน</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        // --- Common Helpers (Duplicated in each file) ---
+        const alertDialog = document.getElementById('customAlertDialog');
+        const alertT = document.getElementById('customAlertTitle');
+        const alertM = document.getElementById('customAlertMessage');
+        const alertBtn = document.getElementById('customAlertButton');
+
+        const confirmDialog = document.getElementById('customConfirmDialog');
+        const confT = document.getElementById('customConfirmTitle');
+        const confM = document.getElementById('customConfirmMessage');
+        const okBtn = document.getElementById('customConfirmConfirmButton');
+        const noBtn = document.getElementById('customConfirmCancelButton');
+
+        function showAlert(title, message, cb) {
+            alertT.textContent = title;
+            alertM.textContent = message;
+            alertDialog.showModal();
+
+            const hide = () => {
+                alertDialog.close();
+                alertBtn.removeEventListener('click', hide);
+                cb && cb();
+            };
+            alertBtn.addEventListener('click', hide);
+        }
+
+        function showConfirm(title, message) {
+            return new Promise(res => {
+                confT.textContent = title;
+                confM.textContent = message;
+                confirmDialog.showModal();
+
+                const onOk = () => { cleanup(); res(true); };
+                const onNo = () => { cleanup(); res(false); };
+
+                function cleanup() {
+                    confirmDialog.close();
+                    okBtn.removeEventListener('click', onOk);
+                    noBtn.removeEventListener('click', noBtn);
+                }
+                okBtn.addEventListener('click', onOk);
+                noBtn.addEventListener('click', noBtn);
+            });
+        }
+
+        async function callApi(action, method = 'GET', data = null, expectJson = true) {
+            let url;
+            let options = { method: method };
+
+            if (method === 'GET') {
+                url = `${CONFIG.CLOUD_FUNCTION_GET_URL}?action=${action}`;
+                if (data) {
+                    const params = new URLSearchParams(data).toString();
+                    url += `&${params}`;
+                }
+            } else { 
+                url = CONFIG.CLOUD_FUNCTION_POST_URL;
+                options.headers = {
+                    'Content-Type': 'application/json',
+                };
+                options.body = JSON.stringify({ action: action, ...data });
+            }
+
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    let errorBody;
+                    try {
+                        errorBody = await response.json();
+                    } catch {
+                        errorBody = { error: await response.text() }; 
+                    }
+                    throw new Error(`HTTP Error! Status: ${response.status} - ${errorBody.error || errorBody}`);
+                }
+                
+                if (expectJson) {
+                    return await response.json();
+                } else {
+                    return await response.text();
+                }
+            } catch (error) {
+                console.error("API call failed:", error);
+                showAlert("ข้อผิดพลาด API", `ไม่สามารถเชื่อมต่อ/ประมวลผลข้อมูล: ${error.message}`);
+                throw error;
+            }
+        }
+        // --- End Common Helpers ---
+
+
+        // --- History Management Logic (Specific to history.html) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const tableBody = document.getElementById('history-table-body');
+            const lineIdSearchInput = document.getElementById('history-lineid-search');
+            const typeFilterSelect = document.getElementById('history-type-filter');
+            const startDateInput = document.getElementById('history-start-date');
+            const endDateInput = document.getElementById('history-end-date');
+            const filterBtn = document.getElementById('history-filter-btn');
+            const resetFilterBtn = document.getElementById('history-reset-filter-btn');
+
+            // Highlight active sidebar link for this page
+            document.getElementById('nav-history').classList.add('active');
+
+
+            async function loadHistory(filters = {}) {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center">กำลังโหลดประวัติ...</td></tr>`;
+                try {
+                    const history = await callApi('getAllHistory', 'GET', filters); 
+                    renderHistory(history);
+                } catch (error) {
+                    console.error("Error loading history:", error);
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดประวัติ</td></tr>`;
+                }
+            }
+
+            function renderHistory(historyToRender) {
+                if (historyToRender.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center">ไม่พบประวัติการทำรายการ</td></tr>`;
+                    return;
+                }
+                tableBody.innerHTML = historyToRender.map(item => `
+                    <tr>
+                        <td>${item.lineId || '-'}</td>
+                        <td>${item.type || '-'}</td>
+                        <td>${item.detail || '-'}</td>
+                        <td>${item.amount || 0}</td>
+                        <td>${item.date || '-'}</td>
+                        <td>${item.refId || '-'}</td>
+                    </tr>
+                `).join('');
+            }
+
+            filterBtn.onclick = () => {
+                const filters = {
+                    lineId: lineIdSearchInput.value.trim(),
+                    type: typeFilterSelect.value,
+                    startDate: startDateInput.value,
+                    endDate: endDateInput.value
+                };
+                loadHistory(filters);
+            };
+
+            resetFilterBtn.onclick = () => {
+                lineIdSearchInput.value = '';
+                typeFilterSelect.value = '';
+                startDateInput.value = '';
+                endDateInput.value = '';
+                loadHistory();
+            };
+
+            loadHistory();
+        });
+    </script>
+</body>
+</html>
