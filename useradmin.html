@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - CRM-3RN</title>
+    <title>Admin - จัดการผู้ใช้งาน</title>
     <!-- Load config for Cloud Function URLs -->
     <script src="config.js"></script> 
     <!-- DaisyUI CDN (includes Tailwind CSS) -->
@@ -11,24 +11,11 @@
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <style>
         .hidden { display: none !important; }
-        /* Basic styling for dashboard layout */
-        body { display: flex; min-height: 100vh; font-family: sans-serif; background-color: #f8fafc; } /* light gray background */
-        #sidebar { width: 250px; background-color: #e2e8f0; color: #1a202c; padding: 20px; flex-shrink: 0; border-right: 1px solid #cbd5e0; } /* Light sidebar */
-        #main-content { flex-grow: 1; padding: 20px; background-color: #ffffff; } /* White content area */
-        #sidebar a { 
-            display: block; padding: 10px; margin-bottom: 5px; border-radius: 5px; 
-            background-color: #4a5568; /* Gray-700, dark button look */
-            color: white; text-decoration: none; transition: background-color 0.2s;
-            font-weight: 500;
-        }
-        #sidebar a:hover { background-color: #2d3748; } /* Gray-800 on hover */
-        #sidebar a.active { background-color: #1a202c; } /* Black on active */
-
-        .tab-content { padding: 20px 0; }
+        body { background-color: #f0f2f5; font-family: sans-serif; padding: 20px; }
         .table-container { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
         th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
-        th { background-color: #edf2f7; } /* Tailwind gray-100 */
+        th { background-color: #e2e8f0; } /* Tailwind gray-200 */
         .form-group { margin-bottom: 15px; }
         .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
         .form-group input[type="text"], .form-group input[type="number"], 
@@ -36,71 +23,25 @@
         .form-group input[type="date"], .form-group textarea,
         .form-group .input, .form-group .textarea, .form-group .select { 
             width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; 
-            box-sizing: border-box; 
+            box-sizing: border-box; /* Include padding in width */
         }
         /* DaisyUI specific overrides for consistency */
         .input.input-bordered, .textarea.textarea-bordered, .select.select-bordered {
             border-color: #d1d5db; /* gray-300 */
         }
         .btn { transition: background-color 0.2s, color 0.2s; }
-        .btn.btn-neutral { background-color: #1a202c; color: white; border-color: #1a202c; } /* Tailwind gray-900 */
-        .btn.btn-neutral:hover { background-color: #2d3748; border-color: #2d3748; } /* Tailwind gray-800 */
     </style>
 </head>
-<body class="font-sans">
+<body>
 
-    <div id="sidebar">
-        <h1 class="text-2xl font-bold mb-8 text-center text-gray-800">Admin Panel</h1>
-        <nav>
-            <a href="#users" class="active" id="nav-users">ผู้ใช้งาน</a>
-            <a href="#items" id="nav-items">สินค้า/ของรางวัล</a>
-            <a href="#events" id="nav-events">กิจกรรม</a>
-            <a href="#codes" id="nav-codes">โค้ด</a>
-            <a href="#history" id="nav-history">ประวัติ</a>
-            <!-- <a href="#settings" id="nav-settings">Settings</a> -->
-        </nav>
-    </div>
-
-    <div id="main-content" class="min-h-screen">
-        <h2 id="page-title" class="text-3xl font-bold mb-6 text-gray-800"></h2>
-        <div id="content-area">
-            <!-- Content will be loaded here via JavaScript -->
-            <div class="text-center text-gray-500">Loading dashboard...</div>
-        </div>
-    </div>
-
-    <!-- Common Alert Dialog (from LIFF App) -->
-    <dialog id="customAlertDialog" class="modal">
-        <div class="modal-box text-center">
-            <h3 id="customAlertTitle" class="font-bold text-lg mb-3"></h3>
-            <p id="customAlertMessage" class="py-4 whitespace-pre-line"></p>
-            <div class="modal-action justify-center">
-                <button id="customAlertButton" class="btn btn-neutral w-full">ตกลง</button>
-            </div>
-        </div>
-    </dialog>
-
-    <!-- Common Confirm Dialog (from LIFF App) -->
-    <dialog id="customConfirmDialog" class="modal">
-        <div class="modal-box text-center">
-            <h3 id="customConfirmTitle" class="font-bold text-lg mb-3"></h3>
-            <p id="customConfirmMessage" class="py-4"></p>
-            <div class="modal-action justify-around">
-                <button id="customConfirmCancelButton" class="btn btn-outline btn-neutral">ยกเลิก</button>
-                <button id="customConfirmConfirmButton" class="btn btn-neutral">ยืนยัน</button>
-            </div>
-        </div>
-    </dialog>
-
-    <!-- TEMPLATES FOR EACH SECTION -->
-
-    <!-- Users Template -->
-    <template id="template-users">
+    <div class="container mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800 text-center">จัดการผู้ใช้งาน</h1>
+        
         <div class="tab-content">
-            <h3 class="text-2xl font-semibold mb-4">ผู้ใช้งาน</h3>
+            <h3 class="text-2xl font-semibold mb-4">รายการผู้ใช้งาน</h3>
             <div class="flex items-center gap-4 mb-4">
                 <input type="text" id="user-search" placeholder="ค้นหาด้วย Line ID / ชื่อ / เบอร์โทร" class="input input-bordered flex-grow">
-                <button id="user-search-btn" class="btn btn-neutral">ค้นหา</button>
+                <button id="user-search-btn" class="btn btn-primary">ค้นหา</button>
                 <button id="user-reset-search-btn" class="btn btn-ghost">รีเซ็ต</button>
             </div>
             <div class="table-container bg-white p-4 rounded shadow">
@@ -163,7 +104,7 @@
                             <input type="text" id="user-modal-level" class="input input-bordered">
                         </div>
                         <div class="modal-action">
-                            <button type="submit" class="btn btn-neutral">บันทึก</button>
+                            <button type="submit" class="btn btn-primary">บันทึก</button>
                             <button type="button" class="btn btn-ghost" onclick="document.getElementById('user-detail-modal').close()">ยกเลิก</button>
                             <button type="button" id="user-delete-btn" class="btn btn-error">ลบผู้ใช้</button>
                         </div>
@@ -171,219 +112,33 @@
                 </div>
             </dialog>
         </div>
-    </template>
+    </div>
 
-    <!-- Items Template -->
-    <template id="template-items">
-        <div class="tab-content">
-            <h3 class="text-2xl font-semibold mb-4">สินค้า / ของรางวัล</h3>
-            <button id="add-item-btn" class="btn btn-success mb-4">เพิ่มของรางวัลใหม่</button>
-            <div class="table-container bg-white p-4 rounded shadow">
-                <table class="table w-full">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>ชื่อ</th>
-                            <th>แต้มที่ใช้</th>
-                            <th>รูปภาพ (URL)</th>
-                            <th>การดำเนินการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="items-table-body">
-                        <tr><td colspan="5" class="text-center">กำลังโหลดสินค้า...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <dialog id="item-detail-modal" class="modal">
-                <div class="modal-box max-w-xl">
-                    <h3 class="font-bold text-lg" id="item-modal-title"></h3>
-                    <form id="item-detail-form" class="py-4 space-y-3">
-                        <input type="hidden" id="item-modal-id">
-                        <div class="form-group">
-                            <label>ID:</label>
-                            <input type="text" id="item-modal-display-id" class="input input-bordered">
-                            <small class="text-gray-500">สามารถระบุ ID เอง (เช่น ITEM001) หรือปล่อยว่างเพื่อสร้างอัตโนมัติ</small>
-                        </div>
-                        <div class="form-group">
-                            <label>ชื่อ:</label>
-                            <input type="text" id="item-modal-name" class="input input-bordered">
-                        </div>
-                        <div class="form-group">
-                            <label>แต้มที่ใช้:</label>
-                            <input type="number" id="item-modal-point" class="input input-bordered">
-                        </div>
-                        <div class="form-group">
-                            <label>URL รูปภาพ:</label>
-                            <input type="text" id="item-modal-image" class="input input-bordered">
-                            <img id="item-image-preview" src="" alt="Image Preview" class="mt-2 w-32 h-32 object-cover hidden rounded">
-                        </div>
-                        <div class="modal-action">
-                            <button type="submit" class="btn btn-neutral">บันทึก</button>
-                            <button type="button" class="btn btn-ghost" onclick="document.getElementById('item-detail-modal').close()">ยกเลิก</button>
-                            <button type="button" id="item-delete-btn" class="btn btn-error hidden">ลบ</button>
-                        </div>
-                    </form>
-                </div>
-            </dialog>
-        </div>
-    </template>
-
-    <!-- Events Template -->
-    <template id="template-events">
-        <div class="tab-content">
-            <h3 class="text-2xl font-semibold mb-4">กิจกรรม</h3>
-            <button id="add-event-btn" class="btn btn-success mb-4">เพิ่มกิจกรรมใหม่</button>
-            <div class="table-container bg-white p-4 rounded shadow">
-                <table class="table w-full">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>ชื่อกิจกรรม</th>
-                            <th>แต้มที่ได้</th>
-                            <th>คำอธิบาย</th>
-                            <th>รูปภาพ (URL)</th>
-                            <th>การดำเนินการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="events-table-body">
-                        <tr><td colspan="6" class="text-center">กำลังโหลดกิจกรรม...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <dialog id="event-detail-modal" class="modal">
-                <div class="modal-box max-w-xl">
-                    <h3 class="font-bold text-lg" id="event-modal-title"></h3>
-                    <form id="event-detail-form" class="py-4 space-y-3">
-                        <input type="hidden" id="event-modal-id">
-                        <div class="form-group">
-                            <label>ID:</label>
-                            <input type="text" id="event-modal-display-id" class="input input-bordered">
-                            <small class="text-gray-500">สามารถระบุ ID เอง (เช่น EVT001) หรือปล่อยว่างเพื่อสร้างอัตโนมัติ</small>
-                        </div>
-                        <div class="form-group">
-                            <label>ชื่อกิจกรรม:</label>
-                            <input type="text" id="event-modal-title-input" class="input input-bordered">
-                        </div>
-                        <div class="form-group">
-                            <label>แต้มที่ได้:</label>
-                            <input type="number" id="event-modal-point" class="input input-bordered">
-                        </div>
-                        <div class="form-group">
-                            <label>คำอธิบาย:</label>
-                            <textarea id="event-modal-desc" class="textarea textarea-bordered"></textarea>
-                        </div>
-                        <div class="form-group">
-                            <label>URL รูปภาพ:</label>
-                            <input type="text" id="event-modal-image" class="input input-bordered">
-                            <img id="event-image-preview" src="" alt="Image Preview" class="mt-2 w-32 h-32 object-cover hidden rounded">
-                        </div>
-                        <div class="modal-action">
-                            <button type="submit" class="btn btn-neutral">บันทึก</button>
-                            <button type="button" class="btn btn-ghost" onclick="document.getElementById('event-detail-modal').close()">ยกเลิก</button>
-                            <button type="button" id="event-delete-btn" class="btn btn-error hidden">ลบ</button>
-                        </div>
-                    </form>
-                </div>
-            </dialog>
-        </div>
-    </template>
-
-    <!-- Codes Template -->
-    <template id="template-codes">
-        <div class="tab-content">
-            <h3 class="text-2xl font-semibold mb-4">โค้ด</h3>
-            <button id="add-code-btn" class="btn btn-success mb-4">เพิ่มโค้ดใหม่</button>
-            <div class="table-container bg-white p-4 rounded shadow">
-                <table class="table w-full">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>ชื่อโค้ด</th>
-                            <th>แต้มที่ได้</th>
-                            <th>คำอธิบาย</th>
-                            <th>การดำเนินการ</th>
-                        </tr>
-                    </thead>
-                    <tbody id="codes-table-body">
-                        <tr><td colspan="5" class="text-center">กำลังโหลดโค้ด...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-            <dialog id="code-detail-modal" class="modal">
-                <div class="modal-box max-w-xl">
-                    <h3 class="font-bold text-lg" id="code-modal-title"></h3>
-                    <form id="code-detail-form" class="py-4 space-y-3">
-                        <input type="hidden" id="code-modal-id">
-                        <div class="form-group">
-                            <label>ID:</label>
-                            <input type="text" id="code-modal-display-id" class="input input-bordered">
-                            <small class="text-gray-500">สามารถระบุ ID เอง (เช่น CDE001) หรือปล่อยว่างเพื่อสร้างอัตโนมัติ</small>
-                        </div>
-                        <div class="form-group">
-                            <label>ชื่อโค้ด:</label>
-                            <input type="text" id="code-modal-title-input" class="input input-bordered">
-                        </div>
-                        <div class="form-group">
-                            <label>แต้มที่ได้:</label>
-                            <input type="number" id="code-modal-point" class="input input-bordered">
-                        </div>
-                        <div class="form-group">
-                            <label>คำอธิบาย:</label>
-                            <textarea id="code-modal-desc" class="textarea textarea-bordered"></textarea>
-                        </div>
-                        <div class="modal-action">
-                            <button type="submit" class="btn btn-neutral">บันทึก</button>
-                            <button type="button" class="btn btn-ghost" onclick="document.getElementById('code-detail-modal').close()">ยกเลิก</button>
-                            <button type="button" id="code-delete-btn" class="btn btn-error hidden">ลบ</button>
-                        </div>
-                    </form>
-                </div>
-            </dialog>
-        </div>
-    </template>
-
-    <!-- History Template -->
-    <template id="template-history">
-        <div class="tab-content">
-            <h3 class="text-2xl font-semibold mb-4">ประวัติการทำรายการ</h3>
-            <div class="flex flex-wrap items-center gap-4 mb-4">
-                <input type="text" id="history-lineid-search" placeholder="ค้นหาด้วย Line ID" class="input input-bordered">
-                <select id="history-type-filter" class="select select-bordered">
-                    <option value="">ทั้งหมด</option>
-                    <option value="checkin">เช็คอิน</option>
-                    <option value="redeem">แลกของรางวัล</option>
-                    <option value="transfer_out">โอนออก</option>
-                    <option value="transfer_in">โอนเข้า</option>
-                    <option value="event">กิจกรรม</option>
-                    <option value="code">โค้ด</option>
-                </select>
-                <input type="date" id="history-start-date" class="input input-bordered">
-                <input type="date" id="history-end-date" class="input input-bordered">
-                <button id="history-filter-btn" class="btn btn-neutral">กรอง</button>
-                <button id="history-reset-filter-btn" class="btn btn-ghost">รีเซ็ต</button>
-            </div>
-            <div class="table-container bg-white p-4 rounded shadow">
-                <table class="table w-full">
-                    <thead>
-                        <tr>
-                            <th>Line ID</th>
-                            <th>ประเภท</th>
-                            <th>รายละเอียด</th>
-                            <th>จำนวนแต้ม</th>
-                            <th>วันที่</th>
-                            <th>Ref ID</th>
-                        </tr>
-                    </thead>
-                    <tbody id="history-table-body">
-                        <tr><td colspan="6" class="text-center">กำลังโหลดประวัติ...</td></tr>
-                    </tbody>
-                </table>
+    <!-- Common Alert Dialog -->
+    <dialog id="customAlertDialog" class="modal">
+        <div class="modal-box text-center">
+            <h3 id="customAlertTitle" class="font-bold text-lg mb-3"></h3>
+            <p id="customAlertMessage" class="py-4 whitespace-pre-line"></p>
+            <div class="modal-action justify-center">
+                <button id="customAlertButton" class="btn btn-neutral w-full">ตกลง</button>
             </div>
         </div>
-    </template>
+    </dialog>
+
+    <!-- Common Confirm Dialog -->
+    <dialog id="customConfirmDialog" class="modal">
+        <div class="modal-box text-center">
+            <h3 id="customConfirmTitle" class="font-bold text-lg mb-3"></h3>
+            <p id="customConfirmMessage" class="py-4"></p>
+            <div class="modal-action justify-around">
+                <button id="customConfirmCancelButton" class="btn btn-outline btn-neutral">ยกเลิก</button>
+                <button id="customConfirmConfirmButton" class="btn btn-neutral">ยืนยัน</button>
+            </div>
+        </div>
+    </dialog>
 
     <script>
-        // Common Alert Dialog references (Copied from LIFF App, ensure consistency)
+        // Common Alert Dialog references
         const alertDialog = document.getElementById('customAlertDialog');
         const alertT = document.getElementById('customAlertTitle');
         const alertM = document.getElementById('customAlertMessage');
@@ -425,53 +180,6 @@
                 okBtn.addEventListener('click', onOk);
                 noBtn.addEventListener('click', onNo);
             });
-        }
-
-        // Global DOM Elements
-        const pageTitleEl = document.getElementById('page-title');
-        const contentArea = document.getElementById('content-area');
-        const sidebarNavs = document.querySelectorAll('#sidebar nav a');
-
-        // Simple Router
-        const routes = {
-            '#users': { title: 'จัดการผู้ใช้งาน', template: 'template-users', init: initUsers },
-            '#items': { title: 'จัดการสินค้า / ของรางวัล', template: 'template-items', init: initItems },
-            '#events': { title: 'จัดการกิจกรรม', template: 'template-events', init: initEvents },
-            '#codes': { title: 'จัดการโค้ด', template: 'template-codes', init: initCodes },
-            '#history': { title: 'ประวัติการทำรายการ', template: 'template-history', init: initHistory },
-            '': { title: 'ผู้ใช้งาน', template: 'template-users', init: initUsers } // Default to users
-        };
-
-        async function router() {
-            const hash = window.location.hash || '';
-            const route = routes[hash] || routes[''];
-
-            // Update active sidebar link
-            sidebarNavs.forEach(nav => {
-                nav.classList.remove('active');
-                if (nav.getAttribute('href') === hash || (hash === '' && nav.getAttribute('href') === '#users')) {
-                    nav.classList.add('active');
-                }
-            });
-
-            pageTitleEl.textContent = route.title;
-            contentArea.innerHTML = ''; // Clear previous content
-
-            const template = document.getElementById(route.template);
-            if (template) {
-                contentArea.appendChild(template.content.cloneNode(true));
-            } else {
-                contentArea.innerHTML = `<p class="text-center text-red-500">Template for ${route.title} not found.</p>`;
-                console.error(`Template ${route.template} not found.`);
-                return;
-            }
-
-            try {
-                await route.init();
-            } catch (error) {
-                console.error(`Error initializing view ${route.template}:`, error);
-                showAlert('เกิดข้อผิดพลาด', 'ไม่สามารถโหลดข้อมูลหน้านี้ได้ กรุณาลองใหม่อีกครั้ง');
-            }
         }
 
         // --- Helper for making API calls to Cloud Functions ---
@@ -517,8 +225,7 @@
             }
         }
 
-        // --- View Initialization Functions ---
-
+        // --- User Management Logic (initUsers function from admin_dashboard.html) ---
         async function initUsers() {
             const tableBody = document.getElementById('users-table-body');
             const searchInput = document.getElementById('user-search');
@@ -534,7 +241,7 @@
             async function loadUsers(query = {}) {
                 tableBody.innerHTML = `<tr><td colspan="7" class="text-center">กำลังโหลดผู้ใช้งาน...</td></tr>`;
                 try {
-                    const users = await callApi('getUsers', 'GET', query); // สมมติว่ามี action 'getUsers'
+                    const users = await callApi('getUsers', 'GET', query);
                     allUsers = users;
                     renderUsers(users);
                 } catch (error) {
@@ -624,7 +331,7 @@
                 let action = 'updateUserAdmin';
 
                 if (isNewUser) { // If adding a new user
-                    if (!lineIdFromDisplay) { // If admin didn't type a Line ID for new user, backend will handle auto-gen
+                    if (!lineIdFromDisplay) { // If admin didn't type a Line ID for new user, let backend generate (if allowed)
                         actualLineId = ''; // Send empty string, backend will handle auto-gen or throw error
                     } else {
                         actualLineId = lineIdFromDisplay; // Use admin-provided Line ID for new user
@@ -647,10 +354,10 @@
                 if (!confirmed) return;
 
                 try {
-                    const res = await callApi(action, 'POST', userData, false); // Expect text response
+                    const res = await callApi(action, 'POST', userData, false);
                     showAlert('สถานะ', res, () => {
                         userDetailModal.close();
-                        loadUsers(); // Reload user list
+                        loadUsers();
                     });
                 } catch (error) {
                     // Error handled in callApi
@@ -663,10 +370,10 @@
                 if (!confirmed) return;
 
                 try {
-                    const res = await callApi('deleteUser', 'POST', { lineId: lineId }, false); // DELETE via POST
+                    const res = await callApi('deleteUser', 'POST', { lineId: lineId }, false);
                     showAlert('สถานะ', res, () => {
                         userDetailModal.close();
-                        loadUsers(); // Reload user list
+                        loadUsers();
                     });
                 } catch (error) {
                     // Error handled in callApi
@@ -687,477 +394,11 @@
                 loadUsers();
             };
 
-            loadUsers(); // Initial load
+            // --- Main Initialization for this page ---
+            document.addEventListener('DOMContentLoaded', initUsers);
         }
+        initUsers(); // Call initUsers directly to start the page. (DOMContentLoaded event listener is also valid)
 
-        async function initItems() {
-            const tableBody = document.getElementById('items-table-body');
-            const addItemBtn = document.getElementById('add-item-btn');
-            const itemDetailModal = document.getElementById('item-detail-modal');
-            const itemDetailForm = document.getElementById('item-detail-form');
-            const itemDeleteBtn = document.getElementById('item-delete-btn');
-            const itemImagePreview = document.getElementById('item-image-preview');
-            const itemModalIdInput = document.getElementById('item-modal-id');
-            const itemModalDisplayIdInput = document.getElementById('item-modal-display-id');
-            const itemModalImageInput = document.getElementById('item-modal-image');
-
-
-            let allItems = [];
-
-            async function loadItems() {
-                tableBody.innerHTML = `<tr><td colspan="5" class="text-center">กำลังโหลดสินค้า...</td></tr>`;
-                try {
-                    const items = await callApi('getItems', 'GET');
-                    allItems = items;
-                    renderItems(items);
-                } catch (error) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดสินค้า</td></tr>`;
-                }
-            }
-
-            function renderItems(itemsToRender) {
-                if (itemsToRender.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center">ไม่พบสินค้า/ของรางวัล</td></tr>`;
-                    return;
-                }
-                tableBody.innerHTML = itemsToRender.map(item => `
-                    <tr>
-                        <td>${item.id || '-'}</td>
-                        <td>${item.name || '-'}</td>
-                        <td>${item.point || 0}</td>
-                        <td><img src="${item.image}" class="w-12 h-12 object-cover rounded" onerror="this.style.display='none';"></td>
-                        <td>
-                            <button class="btn btn-sm btn-info view-item-btn" data-id="${item.id}">ดู/แก้ไข</button>
-                        </td>
-                    </tr>
-                `).join('');
-
-                document.querySelectorAll('.view-item-btn').forEach(button => {
-                    button.onclick = (e) => showItemDetail(e.target.dataset.id);
-                });
-            }
-
-            function showItemDetail(id) {
-                const item = allItems.find(i => i.id === id);
-                document.getElementById('item-modal-title').textContent = item ? `แก้ไขสินค้า: ${item.name}` : 'เพิ่มสินค้าใหม่';
-                itemDetailForm.reset();
-                itemImagePreview.classList.add('hidden');
-                itemDeleteBtn.classList.add('hidden'); 
-
-                if (item) {
-                    itemModalIdInput.value = item.id; // Hidden field
-                    itemModalDisplayIdInput.value = item.id; // Display field
-                    itemModalDisplayIdInput.readOnly = true; // Make ID read-only for existing items
-                    itemModalDisplayIdInput.classList.add('cursor-not-allowed');
-
-                    document.getElementById('item-modal-name').value = item.name;
-                    document.getElementById('item-modal-point').value = item.point;
-                    itemModalImageInput.value = item.image;
-                    if (item.image) {
-                        itemImagePreview.src = item.image;
-                        itemImagePreview.classList.remove('hidden');
-                    }
-                    itemDeleteBtn.classList.remove('hidden');
-                } else { // New Item
-                    itemModalIdInput.value = ''; // Ensure hidden ID is empty
-                    itemModalDisplayIdInput.value = ''; // Let admin type ID or leave blank
-                    itemModalDisplayIdInput.readOnly = false; // Allow typing ID for new item
-                    itemModalDisplayIdInput.classList.remove('cursor-not-allowed');
-                }
-                itemDetailModal.showModal();
-            }
-
-            itemDetailForm.onsubmit = async (e) => {
-                e.preventDefault();
-                const id = document.getElementById('item-modal-id').value; // Hidden field
-                const displayId = document.getElementById('item-modal-display-id').value.trim(); // User input field
-                const isNew = !id; // If hidden ID is empty, it's a new item
-
-                let actualId = id;
-                let action = 'updateItem';
-
-                if (isNew) { // If adding a new item
-                    actualId = displayId; // Use display ID (can be empty for auto-generate)
-                    action = 'addItem'; // Use specific add action
-                }
-
-                const itemData = {
-                    id: actualId, // Will be empty string if auto-generate is desired
-                    name: document.getElementById('item-modal-name').value,
-                    point: parseInt(document.getElementById('item-modal-point').value, 10),
-                    image: document.getElementById('item-modal-image').value
-                };
-
-                const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNew ? 'เพิ่ม' : 'อัปเดต'} สินค้านี้หรือไม่?`);
-                if (!confirmed) return;
-
-                try {
-                    const res = await callApi(action, 'POST', itemData, false);
-                    showAlert('สถานะ', res, () => {
-                        itemDetailModal.close();
-                        loadItems();
-                    });
-                } catch (error) {}
-            };
-
-            itemDeleteBtn.onclick = async () => {
-                const id = document.getElementById('item-modal-id').value;
-                const confirmed = await showConfirm('ยืนยันการลบ', `คุณแน่ใจหรือไม่ที่จะลบสินค้า ID: ${id}?`);
-                if (!confirmed) return;
-
-                try {
-                    const res = await callApi('deleteItem', 'POST', { id: id }, false); // DELETE via POST
-                    showAlert('สถานะ', res, () => {
-                        itemDetailModal.close();
-                        loadItems();
-                    });
-                } catch (error) {}
-            };
-
-            addItemBtn.onclick = () => showItemDetail(null);
-            itemModalImageInput.oninput = () => {
-                if (itemModalImageInput.value) {
-                    itemImagePreview.src = itemModalImageInput.value;
-                    itemImagePreview.classList.remove('hidden');
-                } else {
-                    itemImagePreview.classList.add('hidden');
-                }
-            };
-
-            loadItems();
-        }
-
-        async function initEvents() {
-            const tableBody = document.getElementById('events-table-body');
-            const addEventBtn = document.getElementById('add-event-btn');
-            const eventDetailModal = document.getElementById('event-detail-modal');
-            const eventDetailForm = document.getElementById('event-detail-form');
-            const eventDeleteBtn = document.getElementById('event-delete-btn');
-            const eventImagePreview = document.getElementById('event-image-preview');
-            const eventModalIdInput = document.getElementById('event-modal-id');
-            const eventModalDisplayIdInput = document.getElementById('event-modal-display-id');
-            const eventModalImageInput = document.getElementById('event-modal-image');
-
-            let allEvents = [];
-
-            async function loadEvents() {
-                tableBody.innerHTML = `<tr><td colspan="6" class="text-center">กำลังโหลดกิจกรรม...</td></tr>`;
-                try {
-                    const events = await callApi('getEvents', 'GET');
-                    allEvents = events;
-                    renderEvents(events);
-                } catch (error) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดกิจกรรม</td></tr>`;
-                }
-            }
-
-            function renderEvents(eventsToRender) {
-                if (eventsToRender.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center">ไม่พบกิจกรรม</td></tr>`;
-                    return;
-                }
-                tableBody.innerHTML = eventsToRender.map(event => `
-                    <tr>
-                        <td>${event.id || '-'}</td>
-                        <td>${event.title || '-'}</td>
-                        <td>${event.point || 0}</td>
-                        <td>${event.desc || '-'}</td>
-                        <td><img src="${event.image}" class="w-12 h-12 object-cover rounded" onerror="this.style.display='none';"></td>
-                        <td>
-                            <button class="btn btn-sm btn-info view-event-btn" data-id="${event.id}">ดู/แก้ไข</button>
-                        </td>
-                    </tr>
-                `).join('');
-
-                document.querySelectorAll('.view-event-btn').forEach(button => {
-                    button.onclick = (e) => showEventDetail(e.target.dataset.id);
-                });
-            }
-
-            function showEventDetail(id) {
-                const event = allEvents.find(e => e.id === id);
-                document.getElementById('event-modal-title').textContent = event ? `แก้ไขกิจกรรม: ${event.title}` : 'เพิ่มกิจกรรมใหม่';
-                eventDetailForm.reset();
-                eventImagePreview.classList.add('hidden');
-                eventDeleteBtn.classList.add('hidden');
-
-                if (event) {
-                    eventModalIdInput.value = event.id;
-                    eventModalDisplayIdInput.value = event.id;
-                    eventModalDisplayIdInput.readOnly = true;
-                    eventModalDisplayIdInput.classList.add('cursor-not-allowed');
-
-                    document.getElementById('event-modal-title-input').value = event.title;
-                    document.getElementById('event-modal-point').value = event.point;
-                    document.getElementById('event-modal-desc').value = event.desc;
-                    eventModalImageInput.value = event.image;
-                    if (event.image) {
-                        eventImagePreview.src = event.image;
-                        eventImagePreview.classList.remove('hidden');
-                    }
-                    eventDeleteBtn.classList.remove('hidden');
-                } else { // New Event
-                    eventModalIdInput.value = '';
-                    eventModalDisplayIdInput.value = '';
-                    eventModalDisplayIdInput.readOnly = false;
-                    eventModalDisplayIdInput.classList.remove('cursor-not-allowed');
-                }
-                eventDetailModal.showModal();
-            }
-
-            eventDetailForm.onsubmit = async (e) => {
-                e.preventDefault();
-                const id = document.getElementById('event-modal-id').value;
-                const displayId = document.getElementById('event-modal-display-id').value.trim();
-                const isNew = !id;
-
-                let actualId = id;
-                let action = 'updateEvent';
-
-                if (isNew) {
-                    actualId = displayId;
-                    action = 'addEvent';
-                }
-
-                const eventData = {
-                    id: actualId,
-                    title: document.getElementById('event-modal-title-input').value,
-                    point: parseInt(document.getElementById('event-modal-point').value, 10),
-                    desc: document.getElementById('event-modal-desc').value,
-                    image: document.getElementById('event-modal-image').value
-                };
-
-                const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNew ? 'เพิ่ม' : 'อัปเดต'} กิจกรรมนี้หรือไม่?`);
-                if (!confirmed) return;
-
-                try {
-                    const res = await callApi(action, 'POST', eventData, false);
-                    showAlert('สถานะ', res, () => {
-                        eventDetailModal.close();
-                        loadEvents();
-                    });
-                } catch (error) {}
-            };
-
-            eventDeleteBtn.onclick = async () => {
-                const id = document.getElementById('event-modal-id').value;
-                const confirmed = await showConfirm('ยืนยันการลบ', `คุณแน่ใจหรือไม่ที่จะลบกิจกรรม ID: ${id}?`);
-                if (!confirmed) return;
-
-                try {
-                    const res = await callApi('deleteEvent', 'POST', { id: id }, false); // DELETE via POST
-                    showAlert('สถานะ', res, () => {
-                        eventDetailModal.close();
-                        loadEvents();
-                    });
-                } catch (error) {}
-            };
-
-            addEventBtn.onclick = () => showEventDetail(null);
-            eventModalImageInput.oninput = () => {
-                if (eventModalImageInput.value) {
-                    eventImagePreview.src = eventModalImageInput.value;
-                    eventImagePreview.classList.remove('hidden');
-                } else {
-                    eventImagePreview.classList.add('hidden');
-                }
-            };
-
-            loadEvents();
-        }
-
-        async function initCodes() {
-            const tableBody = document.getElementById('codes-table-body');
-            const addCodeBtn = document.getElementById('add-code-btn');
-            const codeDetailModal = document.getElementById('code-detail-modal');
-            const codeDetailForm = document.getElementById('code-detail-form');
-            const codeDeleteBtn = document.getElementById('code-delete-btn');
-            const codeModalIdInput = document.getElementById('code-modal-id');
-            const codeModalDisplayIdInput = document.getElementById('code-modal-display-id');
-
-            let allCodes = [];
-
-            async function loadCodes() {
-                tableBody.innerHTML = `<tr><td colspan="5" class="text-center">กำลังโหลดโค้ด...</td></tr>`;
-                try {
-                    const codes = await callApi('getCodes', 'GET'); // *** Backend: ต้องสร้าง Cloud Function `getCodes` ***
-                    allCodes = codes;
-                    renderCodes(codes);
-                } catch (error) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดโค้ด</td></tr>`;
-                }
-            }
-
-            function renderCodes(codesToRender) {
-                if (codesToRender.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="5" class="text-center">ไม่พบโค้ด</td></tr>`;
-                    return;
-                }
-                tableBody.innerHTML = codesToRender.map(code => `
-                    <tr>
-                        <td>${code.id || '-'}</td>
-                        <td>${code.title || '-'}</td>
-                        <td>${code.point || 0}</td>
-                        <td>${code.desc || '-'}</td>
-                        <td>
-                            <button class="btn btn-sm btn-info view-code-btn" data-id="${code.id}">ดู/แก้ไข</button>
-                        </td>
-                    </tr>
-                `).join('');
-
-                document.querySelectorAll('.view-code-btn').forEach(button => {
-                    button.onclick = (e) => showCodeDetail(e.target.dataset.id);
-                });
-            }
-
-            function showCodeDetail(id) {
-                const code = allCodes.find(c => c.id === id);
-                document.getElementById('code-modal-title').textContent = code ? `แก้ไขโค้ด: ${code.title}` : 'เพิ่มโค้ดใหม่';
-                codeDetailForm.reset();
-                codeDeleteBtn.classList.add('hidden');
-
-                if (code) {
-                    codeModalIdInput.value = code.id;
-                    codeModalDisplayIdInput.value = code.id;
-                    codeModalDisplayIdInput.readOnly = true;
-                    codeModalDisplayIdInput.classList.add('cursor-not-allowed');
-
-                    document.getElementById('code-modal-title-input').value = code.title;
-                    document.getElementById('code-modal-point').value = code.point;
-                    document.getElementById('code-modal-desc').value = code.desc;
-                    codeDeleteBtn.classList.remove('hidden');
-                } else { // New Code
-                    codeModalIdInput.value = '';
-                    codeModalDisplayIdInput.value = '';
-                    codeModalDisplayIdInput.readOnly = false;
-                    codeModalDisplayIdInput.classList.remove('cursor-not-allowed');
-                }
-                codeDetailModal.showModal();
-            }
-
-            codeDetailForm.onsubmit = async (e) => {
-                e.preventDefault();
-                const id = document.getElementById('code-modal-id').value;
-                const displayId = document.getElementById('code-modal-display-id').value.trim();
-                const isNew = !id;
-
-                let actualId = id;
-                let action = 'updateCode';
-
-                if (isNew) {
-                    actualId = displayId;
-                    action = 'addCode';
-                }
-
-                const codeData = {
-                    id: actualId,
-                    title: document.getElementById('code-modal-title-input').value,
-                    point: parseInt(document.getElementById('code-modal-point').value, 10),
-                    desc: document.getElementById('code-modal-desc').value
-                };
-
-                const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNew ? 'เพิ่ม' : 'อัปเดต'} โค้ดนี้หรือไม่?`);
-                if (!confirmed) return;
-
-                try {
-                    const res = await callApi(action, 'POST', codeData, false);
-                    showAlert('สถานะ', res, () => {
-                        codeDetailModal.close();
-                        loadCodes();
-                    });
-                } catch (error) {}
-            };
-
-            codeDeleteBtn.onclick = async () => {
-                const id = document.getElementById('code-modal-id').value;
-                const confirmed = await showConfirm('ยืนยันการลบ', `คุณแน่ใจหรือไม่ที่จะลบโค้ด ID: ${id}?`);
-                if (!confirmed) return;
-
-                try {
-                    const res = await callApi('deleteCode', 'POST', { id: id }, false); // DELETE via POST
-                    showAlert('สถานะ', res, () => {
-                        codeDetailModal.close();
-                        loadCodes();
-                    });
-                } catch (error) {}
-            };
-
-            addCodeBtn.onclick = () => showCodeDetail(null);
-
-            loadCodes();
-        }
-
-        async function initHistory() {
-            const tableBody = document.getElementById('history-table-body');
-            const lineIdSearchInput = document.getElementById('history-lineid-search');
-            const typeFilterSelect = document.getElementById('history-type-filter');
-            const startDateInput = document.getElementById('history-start-date');
-            const endDateInput = document.getElementById('history-end-date');
-            const filterBtn = document.getElementById('history-filter-btn');
-            const resetFilterBtn = document.getElementById('history-reset-filter-btn');
-
-            async function loadHistory(filters = {}) {
-                tableBody.innerHTML = `<tr><td colspan="6" class="text-center">กำลังโหลดประวัติ...</td></tr>`;
-                try {
-                    const history = await callApi('getAllHistory', 'GET', filters); // สมมติว่ามี action 'getAllHistory'
-                    renderHistory(history);
-                } catch (error) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดประวัติ</td></tr>`;
-                }
-            }
-
-            function renderHistory(historyToRender) {
-                if (historyToRender.length === 0) {
-                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center">ไม่พบประวัติการทำรายการ</td></tr>`;
-                    return;
-                }
-                tableBody.innerHTML = historyToRender.map(item => `
-                    <tr>
-                        <td>${item.lineId || '-'}</td>
-                        <td>${item.type || '-'}</td>
-                        <td>${item.detail || '-'}</td>
-                        <td>${item.amount || 0}</td>
-                        <td>${item.date || '-'}</td>
-                        <td>${item.refId || '-'}</td>
-                    </tr>
-                `).join('');
-            }
-
-            filterBtn.onclick = () => {
-                const filters = {
-                    lineId: lineIdSearchInput.value.trim(),
-                    type: typeFilterSelect.value,
-                    startDate: startDateInput.value,
-                    endDate: endDateInput.value
-                };
-                loadHistory(filters);
-            };
-
-            resetFilterBtn.onclick = () => {
-                lineIdSearchInput.value = '';
-                typeFilterSelect.value = '';
-                startDateInput.value = '';
-                endDateInput.value = '';
-                loadHistory();
-            };
-
-            loadHistory();
-        }
-
-        // --- Main Initialization ---
-        document.addEventListener('DOMContentLoaded', () => {
-            // Setup sidebar navigation
-            sidebarNavs.forEach(nav => {
-                nav.addEventListener('click', (e) => {
-                    e.preventDefault();
-                    window.location.hash = nav.getAttribute('href');
-                });
-            });
-
-            // Initial route load
-            router();
-            window.addEventListener('hashchange', router);
-        });
     </script>
 </body>
 </html>
