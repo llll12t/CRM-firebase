@@ -12,19 +12,30 @@
     <style>
         .hidden { display: none !important; }
         /* Basic styling for dashboard layout */
-        body { display: flex; min-height: 100vh; }
+        body { display: flex; min-height: 100vh; font-family: sans-serif; }
         #sidebar { width: 250px; background-color: #333; color: white; padding: 20px; flex-shrink: 0; }
         #main-content { flex-grow: 1; padding: 20px; background-color: #f0f2f5; }
-        #sidebar a { display: block; padding: 10px; margin-bottom: 5px; border-radius: 5px; color: white; text-decoration: none; }
+        #sidebar a { display: block; padding: 10px; margin-bottom: 5px; border-radius: 5px; color: white; text-decoration: none; transition: background-color 0.2s; }
         #sidebar a:hover, #sidebar a.active { background-color: #555; }
         .tab-content { padding: 20px 0; }
         .table-container { overflow-x: auto; }
         table { width: 100%; border-collapse: collapse; }
-        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
+        th { background-color: #e2e8f0; } /* Tailwind gray-200 */
         .form-group { margin-bottom: 15px; }
-        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; }
-        .form-group input[type="text"], .form-group input[type="number"], .form-group textarea { width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input[type="text"], .form-group input[type="number"], 
+        .form-group input[type="email"], .form-group input[type="tel"],
+        .form-group input[type="date"], .form-group textarea,
+        .form-group .input, .form-group .textarea, .form-group .select { 
+            width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; 
+            box-sizing: border-box; /* Include padding in width */
+        }
+        /* DaisyUI specific overrides for consistency */
+        .input.input-bordered, .textarea.textarea-bordered, .select.select-bordered {
+            border-color: #d1d5db; /* gray-300 */
+        }
+        .btn { transition: background-color 0.2s, color 0.2s; }
     </style>
 </head>
 <body class="font-sans">
@@ -111,7 +122,8 @@
                         <input type="hidden" id="user-modal-lineid">
                         <div class="form-group">
                             <label>Line ID:</label>
-                            <input type="text" id="user-modal-display-lineid" readonly class="input input-bordered cursor-not-allowed">
+                            <input type="text" id="user-modal-display-lineid" class="input input-bordered">
+                            <small class="text-gray-500">สำหรับผู้ใช้ใหม่, สามารถปล่อยว่างเพื่อให้ระบบสร้าง ID ชั่วคราว หรือระบุ Line ID ถ้าทราบ</small>
                         </div>
                         <div class="form-group">
                             <label>ชื่อ:</label>
@@ -180,7 +192,8 @@
                         <input type="hidden" id="item-modal-id">
                         <div class="form-group">
                             <label>ID:</label>
-                            <input type="text" id="item-modal-display-id" readonly class="input input-bordered cursor-not-allowed">
+                            <input type="text" id="item-modal-display-id" class="input input-bordered">
+                            <small class="text-gray-500">สามารถระบุ ID เอง (เช่น ITEM001) หรือปล่อยว่างเพื่อสร้างอัตโนมัติ</small>
                         </div>
                         <div class="form-group">
                             <label>ชื่อ:</label>
@@ -235,7 +248,8 @@
                         <input type="hidden" id="event-modal-id">
                         <div class="form-group">
                             <label>ID:</label>
-                            <input type="text" id="event-modal-display-id" readonly class="input input-bordered cursor-not-allowed">
+                            <input type="text" id="event-modal-display-id" class="input input-bordered">
+                            <small class="text-gray-500">สามารถระบุ ID เอง (เช่น EVT001) หรือปล่อยว่างเพื่อสร้างอัตโนมัติ</small>
                         </div>
                         <div class="form-group">
                             <label>ชื่อกิจกรรม:</label>
@@ -293,7 +307,8 @@
                         <input type="hidden" id="code-modal-id">
                         <div class="form-group">
                             <label>ID:</label>
-                            <input type="text" id="code-modal-display-id" readonly class="input input-bordered cursor-not-allowed">
+                            <input type="text" id="code-modal-display-id" class="input input-bordered">
+                            <small class="text-gray-500">สามารถระบุ ID เอง (เช่น CDE001) หรือปล่อยว่างเพื่อสร้างอัตโนมัติ</small>
                         </div>
                         <div class="form-group">
                             <label>ชื่อโค้ด:</label>
@@ -322,8 +337,8 @@
     <template id="template-history">
         <div class="tab-content">
             <h3 class="text-2xl font-semibold mb-4">ประวัติการทำรายการ</h3>
-            <div class="flex items-center gap-4 mb-4">
-                <input type="text" id="history-lineid-search" placeholder="ค้นหาด้วย Line ID" class="input input-bordered w-1/3">
+            <div class="flex flex-wrap items-center gap-4 mb-4">
+                <input type="text" id="history-lineid-search" placeholder="ค้นหาด้วย Line ID" class="input input-bordered">
                 <select id="history-type-filter" class="select select-bordered">
                     <option value="">ทั้งหมด</option>
                     <option value="checkin">เช็คอิน</option>
@@ -451,7 +466,7 @@
         }
 
         // --- Helper for making API calls to Cloud Functions ---
-        async function callApi(action, method = 'GET', data = null, isJson = true) {
+        async function callApi(action, method = 'GET', data = null, expectJson = true) {
             let url;
             let options = { method: method };
 
@@ -461,20 +476,13 @@
                     const params = new URLSearchParams(data).toString();
                     url += `&${params}`;
                 }
-            } else if (method === 'POST') {
-                url = CONFIG.CLOUD_FUNCTION_POST_URL;
-                options.headers = {
-                    'Content-Type': 'application/json',
-                };
-                options.body = JSON.stringify({ action: action, ...data });
-            } else if (method === 'DELETE') { // Assuming DELETE also uses POST endpoint with action: 'deleteXxx'
+            } else { // POST or DELETE (simulated via POST for Cloud Functions)
                 url = CONFIG.CLOUD_FUNCTION_POST_URL;
                 options.headers = {
                     'Content-Type': 'application/json',
                 };
                 options.body = JSON.stringify({ action: action, ...data });
             }
-
 
             try {
                 const response = await fetch(url, options);
@@ -483,12 +491,13 @@
                     try {
                         errorBody = await response.json();
                     } catch {
-                        errorBody = { error: await response.text() };
+                        errorBody = { error: await response.text() }; // Fallback to text if not JSON
                     }
                     throw new Error(`HTTP Error! Status: ${response.status} - ${errorBody.error || errorBody}`);
                 }
+                
                 // Cloud Functions may return text for some POSTs, JSON for others
-                if (isJson) {
+                if (expectJson) {
                     return await response.json();
                 } else {
                     return await response.text();
@@ -517,11 +526,8 @@
             async function loadUsers(query = {}) {
                 tableBody.innerHTML = `<tr><td colspan="7" class="text-center">กำลังโหลดผู้ใช้งาน...</td></tr>`;
                 try {
-                    // *** Backend: ต้องสร้าง Cloud Function `getUsers` ที่ดึงผู้ใช้ทั้งหมดหรือตาม query ***
-                    // ตัวอย่าง Query ใน Cloud Function: db.collection('users').where('name', '>=', query).where('name', '<=', query + '~').get();
-                    // หรือถ้าไม่มี query ก็ db.collection('users').get();
                     const users = await callApi('getUsers', 'GET', query); // สมมติว่ามี action 'getUsers'
-                    allUsers = users; // Store for local filtering/detail
+                    allUsers = users;
                     renderUsers(users);
                 } catch (error) {
                     tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดผู้ใช้งาน</td></tr>`;
@@ -535,7 +541,7 @@
                 }
                 tableBody.innerHTML = usersToRender.map(user => `
                     <tr>
-                        <td>${user.lineId || user.id}</td>
+                        <td>${user.lineId || user.id || '-'}</td>
                         <td>${user.name || '-'}</td>
                         <td>${user.phone || '-'}</td>
                         <td>${user.point || 0}</td>
@@ -554,35 +560,67 @@
 
             async function showUserDetail(lineId) {
                 const user = allUsers.find(u => (u.lineId || u.id) === lineId);
-                if (!user) {
-                    showAlert('ไม่พบข้อมูล', 'ไม่พบข้อมูลผู้ใช้งานนี้');
-                    return;
+                
+                document.getElementById('user-modal-title').textContent = user ? `แก้ไขผู้ใช้งาน: ${user.name || user.lineId || user.id}` : 'เพิ่มผู้ใช้งานใหม่';
+                userDetailForm.reset(); // Clear form
+
+                const userModalLineIdInput = document.getElementById('user-modal-lineid');
+                const userModalDisplayLineIdInput = document.getElementById('user-modal-display-lineid');
+                const userModalNameInput = document.getElementById('user-modal-name');
+                const userModalPhoneInput = document.getElementById('user-modal-phone');
+                const userModalEmailInput = document.getElementById('user-modal-email');
+                const userModalAddressInput = document.getElementById('user-modal-address');
+                const userModalNoteInput = document.getElementById('user-modal-note');
+                const userModalPointInput = document.getElementById('user-modal-point');
+                const userModalLevelInput = document.getElementById('user-modal-level');
+
+                if (user) { // Edit existing user
+                    userModalLineIdInput.value = user.lineId || user.id;
+                    userModalDisplayLineIdInput.value = user.lineId || user.id;
+                    userModalDisplayLineIdInput.readOnly = true; // Make Line ID read-only for existing users
+                    userModalDisplayLineIdInput.classList.add('cursor-not-allowed');
+
+                    userModalNameInput.value = user.name || '';
+                    userModalPhoneInput.value = user.phone || '';
+                    userModalEmailInput.value = user.email || '';
+                    userModalAddressInput.value = user.address || '';
+                    userModalNoteInput.value = user.note || '';
+                    userModalPointInput.value = user.point || 0;
+                    userModalLevelInput.value = user.level || 'Member';
+                    userDeleteBtn.classList.remove('hidden'); // Show delete button
+                } else { // New user
+                    userModalLineIdInput.value = '';
+                    userModalDisplayLineIdInput.value = ''; // Let admin type Line ID or leave blank
+                    userModalDisplayLineIdInput.readOnly = false; // Allow typing Line ID for new user
+                    userModalDisplayLineIdInput.classList.remove('cursor-not-allowed');
+
+                    userModalPointInput.value = 0; // Default
+                    userModalLevelInput.value = 'Member'; // Default
+                    userDeleteBtn.classList.add('hidden'); // Hide delete button
                 }
-
-                document.getElementById('user-modal-title').textContent = user.name ? `แก้ไขผู้ใช้งาน: ${user.name}` : 'เพิ่มผู้ใช้งานใหม่';
-                document.getElementById('user-modal-lineid').value = user.lineId || user.id;
-                document.getElementById('user-modal-display-lineid').value = user.lineId || user.id;
-                document.getElementById('user-modal-name').value = user.name || '';
-                document.getElementById('user-modal-phone').value = user.phone || '';
-                document.getElementById('user-modal-email').value = user.email || '';
-                document.getElementById('user-modal-address').value = user.address || '';
-                document.getElementById('user-modal-note').value = user.note || '';
-                document.getElementById('user-modal-point').value = user.point || 0;
-                document.getElementById('user-modal-level').value = user.level || 'Member';
-
-                // Handle Add vs Edit mode
-                userDeleteBtn.classList.toggle('hidden', !lineId); // Show delete button only if editing existing user
-
                 userDetailModal.showModal();
             }
 
             userDetailForm.onsubmit = async (e) => {
                 e.preventDefault();
-                const lineId = document.getElementById('user-modal-lineid').value;
-                const isNewUser = !lineId; // If lineId is empty, it's a new user
+                const lineId = document.getElementById('user-modal-lineid').value; // Hidden field
+                const displayLineId = document.getElementById('user-modal-display-lineid').value.trim(); // User input field
+                const isNewUser = !lineId; // If hidden lineId is empty, it's a new user (admin might have typed one in display field)
 
+                let actualLineId = lineId;
+                let action = 'updateUserAdmin';
+
+                if (isNewUser) { // If adding a new user
+                    if (!displayLineId) {
+                        showAlert('ข้อมูลไม่ครบ', 'กรุณากรอก Line ID สำหรับผู้ใช้ใหม่');
+                        return;
+                    }
+                    actualLineId = displayLineId;
+                    action = 'registerAdmin'; // Use specific admin registration action
+                }
+                
                 const userData = {
-                    lineId: lineId || '', // For new user, it will be blank, Cloud Function will generate
+                    lineId: actualLineId, // Use the determined Line ID
                     name: document.getElementById('user-modal-name').value,
                     phone: document.getElementById('user-modal-phone').value,
                     email: document.getElementById('user-modal-email').value,
@@ -591,8 +629,6 @@
                     point: parseInt(document.getElementById('user-modal-point').value, 10),
                     level: document.getElementById('user-modal-level').value
                 };
-
-                const action = isNewUser ? 'registerAdmin' : 'updateUserAdmin'; // Backend actions
 
                 const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNewUser ? 'เพิ่ม' : 'อัปเดต'} ผู้ใช้งานนี้หรือไม่?`);
                 if (!confirmed) return;
@@ -614,8 +650,7 @@
                 if (!confirmed) return;
 
                 try {
-                    // *** Backend: ต้องสร้าง Cloud Function `deleteUser` ที่ลบผู้ใช้ด้วย Line ID ***
-                    const res = await callApi('deleteUser', 'DELETE', { lineId: lineId }, false); // Expect text response
+                    const res = await callApi('deleteUser', 'POST', { lineId: lineId }, false); // DELETE via POST
                     showAlert('สถานะ', res, () => {
                         userDetailModal.close();
                         loadUsers(); // Reload user list
@@ -626,14 +661,7 @@
             };
 
             addUserBtn.onclick = () => {
-                document.getElementById('user-modal-title').textContent = 'เพิ่มผู้ใช้งานใหม่ (Manual)';
-                userDetailForm.reset();
-                document.getElementById('user-modal-lineid').value = ''; // Ensure lineId is empty for new user
-                document.getElementById('user-modal-display-lineid').value = 'จะถูกสร้างอัตโนมัติ';
-                document.getElementById('user-modal-point').value = 0; // Default points
-                document.getElementById('user-modal-level').value = 'Member'; // Default level
-                userDeleteBtn.classList.add('hidden'); // Hide delete button for new user
-                userDetailModal.showModal();
+                showUserDetail(null); // Call with null to indicate new user
             };
 
             searchBtn.onclick = () => {
@@ -656,7 +684,10 @@
             const itemDetailForm = document.getElementById('item-detail-form');
             const itemDeleteBtn = document.getElementById('item-delete-btn');
             const itemImagePreview = document.getElementById('item-image-preview');
-            const itemImageInput = document.getElementById('item-modal-image');
+            const itemModalIdInput = document.getElementById('item-modal-id');
+            const itemModalDisplayIdInput = document.getElementById('item-modal-display-id');
+            const itemModalImageInput = document.getElementById('item-modal-image');
+
 
             let allItems = [];
 
@@ -678,9 +709,9 @@
                 }
                 tableBody.innerHTML = itemsToRender.map(item => `
                     <tr>
-                        <td>${item.id}</td>
-                        <td>${item.name}</td>
-                        <td>${item.point}</td>
+                        <td>${item.id || '-'}</td>
+                        <td>${item.name || '-'}</td>
+                        <td>${item.point || 0}</td>
                         <td><img src="${item.image}" class="w-12 h-12 object-cover rounded" onerror="this.style.display='none';"></td>
                         <td>
                             <button class="btn btn-sm btn-info view-item-btn" data-id="${item.id}">ดู/แก้ไข</button>
@@ -698,38 +729,52 @@
                 document.getElementById('item-modal-title').textContent = item ? `แก้ไขสินค้า: ${item.name}` : 'เพิ่มสินค้าใหม่';
                 itemDetailForm.reset();
                 itemImagePreview.classList.add('hidden');
-                itemDeleteBtn.classList.add('hidden'); // Default hide delete
+                itemDeleteBtn.classList.add('hidden'); 
 
                 if (item) {
-                    document.getElementById('item-modal-id').value = item.id;
-                    document.getElementById('item-modal-display-id').value = item.id;
+                    itemModalIdInput.value = item.id; // Hidden field
+                    itemModalDisplayIdInput.value = item.id; // Display field
+                    itemModalDisplayIdInput.readOnly = true; // Make ID read-only for existing items
+                    itemModalDisplayIdInput.classList.add('cursor-not-allowed');
+
                     document.getElementById('item-modal-name').value = item.name;
                     document.getElementById('item-modal-point').value = item.point;
-                    document.getElementById('item-modal-image').value = item.image;
+                    itemModalImageInput.value = item.image;
                     if (item.image) {
                         itemImagePreview.src = item.image;
                         itemImagePreview.classList.remove('hidden');
                     }
-                    itemDeleteBtn.classList.remove('hidden'); // Show delete if editing
+                    itemDeleteBtn.classList.remove('hidden');
                 } else { // New Item
-                    document.getElementById('item-modal-id').value = '';
-                    document.getElementById('item-modal-display-id').value = 'จะถูกสร้างอัตโนมัติ';
+                    itemModalIdInput.value = ''; // Ensure hidden ID is empty
+                    itemModalDisplayIdInput.value = ''; // Let admin type ID or leave blank
+                    itemModalDisplayIdInput.readOnly = false; // Allow typing ID for new item
+                    itemModalDisplayIdInput.classList.remove('cursor-not-allowed');
                 }
                 itemDetailModal.showModal();
             }
 
             itemDetailForm.onsubmit = async (e) => {
                 e.preventDefault();
-                const id = document.getElementById('item-modal-id').value;
-                const isNew = !id;
+                const id = document.getElementById('item-modal-id').value; // Hidden field
+                const displayId = document.getElementById('item-modal-display-id').value.trim(); // User input field
+                const isNew = !id; // If hidden ID is empty, it's a new item
+
+                let actualId = id;
+                let action = 'updateItem';
+
+                if (isNew) { // If adding a new item
+                    actualId = displayId; // Use display ID (can be empty for auto-generate)
+                    action = 'addItem'; // Use specific add action
+                }
+
                 const itemData = {
-                    id: id,
+                    id: actualId, // Will be empty string if auto-generate is desired
                     name: document.getElementById('item-modal-name').value,
                     point: parseInt(document.getElementById('item-modal-point').value, 10),
                     image: document.getElementById('item-modal-image').value
                 };
 
-                const action = isNew ? 'addItem' : 'updateItem';
                 const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNew ? 'เพิ่ม' : 'อัปเดต'} สินค้านี้หรือไม่?`);
                 if (!confirmed) return;
 
@@ -748,8 +793,7 @@
                 if (!confirmed) return;
 
                 try {
-                    // *** Backend: ต้องสร้าง Cloud Function `deleteItem` ที่ลบสินค้าด้วย ID ***
-                    const res = await callApi('deleteItem', 'DELETE', { id: id }, false);
+                    const res = await callApi('deleteItem', 'POST', { id: id }, false); // DELETE via POST
                     showAlert('สถานะ', res, () => {
                         itemDetailModal.close();
                         loadItems();
@@ -758,9 +802,9 @@
             };
 
             addItemBtn.onclick = () => showItemDetail(null);
-            itemImageInput.oninput = () => {
-                if (itemImageInput.value) {
-                    itemImagePreview.src = itemImageInput.value;
+            itemModalImageInput.oninput = () => {
+                if (itemModalImageInput.value) {
+                    itemImagePreview.src = itemModalImageInput.value;
                     itemImagePreview.classList.remove('hidden');
                 } else {
                     itemImagePreview.classList.add('hidden');
@@ -777,7 +821,9 @@
             const eventDetailForm = document.getElementById('event-detail-form');
             const eventDeleteBtn = document.getElementById('event-delete-btn');
             const eventImagePreview = document.getElementById('event-image-preview');
-            const eventImageInput = document.getElementById('event-modal-image');
+            const eventModalIdInput = document.getElementById('event-modal-id');
+            const eventModalDisplayIdInput = document.getElementById('event-modal-display-id');
+            const eventModalImageInput = document.getElementById('event-modal-image');
 
             let allEvents = [];
 
@@ -799,9 +845,9 @@
                 }
                 tableBody.innerHTML = eventsToRender.map(event => `
                     <tr>
-                        <td>${event.id}</td>
-                        <td>${event.title}</td>
-                        <td>${event.point}</td>
+                        <td>${event.id || '-'}</td>
+                        <td>${event.title || '-'}</td>
+                        <td>${event.point || 0}</td>
                         <td>${event.desc || '-'}</td>
                         <td><img src="${event.image}" class="w-12 h-12 object-cover rounded" onerror="this.style.display='none';"></td>
                         <td>
@@ -820,23 +866,28 @@
                 document.getElementById('event-modal-title').textContent = event ? `แก้ไขกิจกรรม: ${event.title}` : 'เพิ่มกิจกรรมใหม่';
                 eventDetailForm.reset();
                 eventImagePreview.classList.add('hidden');
-                eventDeleteBtn.classList.add('hidden'); // Default hide delete
+                eventDeleteBtn.classList.add('hidden');
 
                 if (event) {
-                    document.getElementById('event-modal-id').value = event.id;
-                    document.getElementById('event-modal-display-id').value = event.id;
+                    eventModalIdInput.value = event.id;
+                    eventModalDisplayIdInput.value = event.id;
+                    eventModalDisplayIdInput.readOnly = true;
+                    eventModalDisplayIdInput.classList.add('cursor-not-allowed');
+
                     document.getElementById('event-modal-title-input').value = event.title;
                     document.getElementById('event-modal-point').value = event.point;
                     document.getElementById('event-modal-desc').value = event.desc;
-                    document.getElementById('event-modal-image').value = event.image;
+                    eventModalImageInput.value = event.image;
                     if (event.image) {
                         eventImagePreview.src = event.image;
                         eventImagePreview.classList.remove('hidden');
                     }
                     eventDeleteBtn.classList.remove('hidden');
                 } else { // New Event
-                    document.getElementById('event-modal-id').value = '';
-                    document.getElementById('event-modal-display-id').value = 'จะถูกสร้างอัตโนมัติ';
+                    eventModalIdInput.value = '';
+                    eventModalDisplayIdInput.value = '';
+                    eventModalDisplayIdInput.readOnly = false;
+                    eventModalDisplayIdInput.classList.remove('cursor-not-allowed');
                 }
                 eventDetailModal.showModal();
             }
@@ -844,16 +895,25 @@
             eventDetailForm.onsubmit = async (e) => {
                 e.preventDefault();
                 const id = document.getElementById('event-modal-id').value;
+                const displayId = document.getElementById('event-modal-display-id').value.trim();
                 const isNew = !id;
+
+                let actualId = id;
+                let action = 'updateEvent';
+
+                if (isNew) {
+                    actualId = displayId;
+                    action = 'addEvent';
+                }
+
                 const eventData = {
-                    id: id,
+                    id: actualId,
                     title: document.getElementById('event-modal-title-input').value,
                     point: parseInt(document.getElementById('event-modal-point').value, 10),
                     desc: document.getElementById('event-modal-desc').value,
                     image: document.getElementById('event-modal-image').value
                 };
 
-                const action = isNew ? 'addEvent' : 'updateEvent';
                 const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNew ? 'เพิ่ม' : 'อัปเดต'} กิจกรรมนี้หรือไม่?`);
                 if (!confirmed) return;
 
@@ -872,8 +932,7 @@
                 if (!confirmed) return;
 
                 try {
-                    // *** Backend: ต้องสร้าง Cloud Function `deleteEvent` ที่ลบกิจกรรมด้วย ID ***
-                    const res = await callApi('deleteEvent', 'DELETE', { id: id }, false);
+                    const res = await callApi('deleteEvent', 'POST', { id: id }, false); // DELETE via POST
                     showAlert('สถานะ', res, () => {
                         eventDetailModal.close();
                         loadEvents();
@@ -882,9 +941,9 @@
             };
 
             addEventBtn.onclick = () => showEventDetail(null);
-            eventImageInput.oninput = () => {
-                if (eventImageInput.value) {
-                    eventImagePreview.src = eventImageInput.value;
+            eventModalImageInput.oninput = () => {
+                if (eventModalImageInput.value) {
+                    eventImagePreview.src = eventModalImageInput.value;
                     eventImagePreview.classList.remove('hidden');
                 } else {
                     eventImagePreview.classList.add('hidden');
@@ -900,6 +959,8 @@
             const codeDetailModal = document.getElementById('code-detail-modal');
             const codeDetailForm = document.getElementById('code-detail-form');
             const codeDeleteBtn = document.getElementById('code-delete-btn');
+            const codeModalIdInput = document.getElementById('code-modal-id');
+            const codeModalDisplayIdInput = document.getElementById('code-modal-display-id');
 
             let allCodes = [];
 
@@ -921,9 +982,9 @@
                 }
                 tableBody.innerHTML = codesToRender.map(code => `
                     <tr>
-                        <td>${code.id}</td>
-                        <td>${code.title}</td>
-                        <td>${code.point}</td>
+                        <td>${code.id || '-'}</td>
+                        <td>${code.title || '-'}</td>
+                        <td>${code.point || 0}</td>
                         <td>${code.desc || '-'}</td>
                         <td>
                             <button class="btn btn-sm btn-info view-code-btn" data-id="${code.id}">ดู/แก้ไข</button>
@@ -943,15 +1004,20 @@
                 codeDeleteBtn.classList.add('hidden');
 
                 if (code) {
-                    document.getElementById('code-modal-id').value = code.id;
-                    document.getElementById('code-modal-display-id').value = code.id;
+                    codeModalIdInput.value = code.id;
+                    codeModalDisplayIdInput.value = code.id;
+                    codeModalDisplayIdInput.readOnly = true;
+                    codeModalDisplayIdInput.classList.add('cursor-not-allowed');
+
                     document.getElementById('code-modal-title-input').value = code.title;
                     document.getElementById('code-modal-point').value = code.point;
                     document.getElementById('code-modal-desc').value = code.desc;
                     codeDeleteBtn.classList.remove('hidden');
                 } else { // New Code
-                    document.getElementById('code-modal-id').value = '';
-                    document.getElementById('code-modal-display-id').value = 'จะถูกสร้างอัตโนมัติ';
+                    codeModalIdInput.value = '';
+                    codeModalDisplayIdInput.value = '';
+                    codeModalDisplayIdInput.readOnly = false;
+                    codeModalDisplayIdInput.classList.remove('cursor-not-allowed');
                 }
                 codeDetailModal.showModal();
             }
@@ -959,15 +1025,24 @@
             codeDetailForm.onsubmit = async (e) => {
                 e.preventDefault();
                 const id = document.getElementById('code-modal-id').value;
+                const displayId = document.getElementById('code-modal-display-id').value.trim();
                 const isNew = !id;
+
+                let actualId = id;
+                let action = 'updateCode';
+
+                if (isNew) {
+                    actualId = displayId;
+                    action = 'addCode';
+                }
+
                 const codeData = {
-                    id: id,
+                    id: actualId,
                     title: document.getElementById('code-modal-title-input').value,
                     point: parseInt(document.getElementById('code-modal-point').value, 10),
                     desc: document.getElementById('code-modal-desc').value
                 };
 
-                const action = isNew ? 'addCode' : 'updateCode';
                 const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNew ? 'เพิ่ม' : 'อัปเดต'} โค้ดนี้หรือไม่?`);
                 if (!confirmed) return;
 
@@ -986,8 +1061,7 @@
                 if (!confirmed) return;
 
                 try {
-                    // *** Backend: ต้องสร้าง Cloud Function `deleteCode` ที่ลบโค้ดด้วย ID ***
-                    const res = await callApi('deleteCode', 'DELETE', { id: id }, false);
+                    const res = await callApi('deleteCode', 'POST', { id: id }, false); // DELETE via POST
                     showAlert('สถานะ', res, () => {
                         codeDetailModal.close();
                         loadCodes();
@@ -1012,8 +1086,6 @@
             async function loadHistory(filters = {}) {
                 tableBody.innerHTML = `<tr><td colspan="6" class="text-center">กำลังโหลดประวัติ...</td></tr>`;
                 try {
-                    // *** Backend: ต้องสร้าง Cloud Function `getAllHistory` ที่รองรับ filter ด้วย ***
-                    // ตัวอย่าง Query ใน Cloud Function: db.collection('points_history').where('lineId', '==', filters.lineId).where('type', '==', filters.type).where('date', '>=', startDate).get();
                     const history = await callApi('getAllHistory', 'GET', filters); // สมมติว่ามี action 'getAllHistory'
                     renderHistory(history);
                 } catch (error) {
