@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - จัดการผู้ใช้งาน</title>
+    <!-- Load config for Cloud Function URLs -->
+    <script src="config.js"></script> 
+    <!-- DaisyUI CDN (includes Tailwind CSS) -->
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@latest/dist/full.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .hidden { display: none !important; }
+        body { background-color: #f0f2f5; font-family: sans-serif; padding: 20px; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
+        th { background-color: #e2e8f0; } /* Tailwind gray-200 */
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input[type="text"], .form-group input[type="number"], 
+        .form-group input[type="email"], .form-group input[type="tel"],
+        .form-group input[type="date"], .form-group textarea,
+        .form-group .input, .form-group .textarea, .form-group .select { 
+            width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; 
+            box-sizing: border-box; /* Include padding in width */
+        }
+        /* DaisyUI specific overrides for consistency */
+        .input.input-bordered, .textarea.textarea-bordered, .select.select-bordered {
+            border-color: #d1d5db; /* gray-300 */
+        }
+        .btn { transition: background-color 0.2s, color 0.2s; }
+    </style>
+</head>
+<body>
+
+    <div class="container mx-auto">
+        <h1 class="text-3xl font-bold mb-6 text-gray-800 text-center">จัดการผู้ใช้งาน</h1>
+        
+        <div class="tab-content">
+            <h3 class="text-2xl font-semibold mb-4">รายการผู้ใช้งาน</h3>
+            <div class="flex items-center gap-4 mb-4">
+                <input type="text" id="user-search" placeholder="ค้นหาด้วย Line ID / ชื่อ / เบอร์โทร" class="input input-bordered flex-grow">
+                <button id="user-search-btn" class="btn btn-primary">ค้นหา</button>
+                <button id="user-reset-search-btn" class="btn btn-ghost">รีเซ็ต</button>
+            </div>
+            <div class="table-container bg-white p-4 rounded shadow">
+                <table class="table w-full">
+                    <thead>
+                        <tr>
+                            <th>Line ID</th>
+                            <th>ชื่อ</th>
+                            <th>เบอร์โทร</th>
+                            <th>แต้ม</th>
+                            <th>ระดับ</th>
+                            <th>ลงทะเบียนเมื่อ</th>
+                            <th>การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="users-table-body">
+                        <tr><td colspan="7" class="text-center">กำลังโหลดผู้ใช้งาน...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="mt-4">
+                <button id="add-user-btn" class="btn btn-success">เพิ่มผู้ใช้งานใหม่ (Manual)</button>
+            </div>
+            <dialog id="user-detail-modal" class="modal">
+                <div class="modal-box max-w-2xl">
+                    <h3 class="font-bold text-lg" id="user-modal-title"></h3>
+                    <form id="user-detail-form" class="py-4 space-y-3">
+                        <input type="hidden" id="user-modal-lineid-hidden"> <!-- Hidden field for actual Line ID from data -->
+                        <div class="form-group">
+                            <label>Line ID:</label>
+                            <input type="text" id="user-modal-display-lineid" class="input input-bordered">
+                            <small class="text-gray-500">สำหรับผู้ใช้ใหม่, สามารถระบุ Line ID หรือปล่อยว่างเพื่อสร้างอัตโนมัติ</small>
+                        </div>
+                        <div class="form-group">
+                            <label>ชื่อ:</label>
+                            <input type="text" id="user-modal-name" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>เบอร์โทรศัพท์:</label>
+                            <input type="text" id="user-modal-phone" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>อีเมล:</label>
+                            <input type="text" id="user-modal-email" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>ที่อยู่:</label>
+                            <textarea id="user-modal-address" class="textarea textarea-bordered"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>หมายเหตุ:</label>
+                            <input type="text" id="user-modal-note" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>แต้ม:</label>
+                            <input type="number" id="user-modal-point" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>ระดับ:</label>
+                            <input type="text" id="user-modal-level" class="input input-bordered">
+                        </div>
+                        <div class="modal-action">
+                            <button type="submit" class="btn btn-primary">บันทึก</button>
+                            <button type="button" class="btn btn-ghost" onclick="document.getElementById('user-detail-modal').close()">ยกเลิก</button>
+                            <button type="button" id="user-delete-btn" class="btn btn-error">ลบผู้ใช้</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+    </div>
+
+    <!-- Common Alert Dialog -->
+    <dialog id="customAlertDialog" class="modal">
+        <div class="modal-box text-center">
+            <h3 id="customAlertTitle" class="font-bold text-lg mb-3"></h3>
+            <p id="customAlertMessage" class="py-4 whitespace-pre-line"></p>
+            <div class="modal-action justify-center">
+                <button id="customAlertButton" class="btn btn-neutral w-full">ตกลง</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Common Confirm Dialog -->
+    <dialog id="customConfirmDialog" class="modal">
+        <div class="modal-box text-center">
+            <h3 id="customConfirmTitle" class="font-bold text-lg mb-3"></h3>
+            <p id="customConfirmMessage" class="py-4"></p>
+            <div class="modal-action justify-around">
+                <button id="customConfirmCancelButton" class="btn btn-outline btn-neutral">ยกเลิก</button>
+                <button id="customConfirmConfirmButton" class="btn btn-neutral">ยืนยัน</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        // Common Alert Dialog references
+        const alertDialog = document.getElementById('customAlertDialog');
+        const alertT = document.getElementById('customAlertTitle');
+        const alertM = document.getElementById('customAlertMessage');
+        const alertBtn = document.getElementById('customAlertButton');
+
+        const confirmDialog = document.getElementById('customConfirmDialog');
+        const confT = document.getElementById('customConfirmTitle');
+        const confM = document.getElementById('customConfirmMessage');
+        const okBtn = document.getElementById('customConfirmConfirmButton');
+        const noBtn = document.getElementById('customConfirmCancelButton');
+
+        function showAlert(title, message, cb) {
+            alertT.textContent = title;
+            alertM.textContent = message;
+            alertDialog.showModal();
+
+            const hide = () => {
+                alertDialog.close();
+                alertBtn.removeEventListener('click', hide);
+                cb && cb();
+            };
+            alertBtn.addEventListener('click', hide);
+        }
+
+        function showConfirm(title, message) {
+            return new Promise(res => {
+                confT.textContent = title;
+                confM.textContent = message;
+                confirmDialog.showModal();
+
+                const onOk = () => { cleanup(); res(true); };
+                const onNo = () => { cleanup(); res(false); };
+
+                function cleanup() {
+                    confirmDialog.close();
+                    okBtn.removeEventListener('click', onOk);
+                    noBtn.removeEventListener('click', onNo);
+                }
+                okBtn.addEventListener('click', onOk);
+                noBtn.addEventListener('click', onNo);
+            });
+        }
+
+        // --- Helper for making API calls to Cloud Functions ---
+        async function callApi(action, method = 'GET', data = null, expectJson = true) {
+            let url;
+            let options = { method: method };
+
+            if (method === 'GET') {
+                url = `${CONFIG.CLOUD_FUNCTION_GET_URL}?action=${action}`;
+                if (data) {
+                    const params = new URLSearchParams(data).toString();
+                    url += `&${params}`;
+                }
+            } else { // POST or DELETE (simulated via POST for Cloud Functions)
+                url = CONFIG.CLOUD_FUNCTION_POST_URL;
+                options.headers = {
+                    'Content-Type': 'application/json',
+                };
+                options.body = JSON.stringify({ action: action, ...data });
+            }
+
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    let errorBody;
+                    try {
+                        errorBody = await response.json();
+                    } catch {
+                        errorBody = { error: await response.text() }; // Fallback to text if not JSON
+                    }
+                    throw new Error(`HTTP Error! Status: ${response.status} - ${errorBody.error || errorBody}`);
+                }
+                
+                if (expectJson) {
+                    return await response.json();
+                } else {
+                    return await response.text();
+                }
+            } catch (error) {
+                console.error("API call failed:", error);
+                showAlert("ข้อผิดพลาด API", `ไม่สามารถเชื่อมต่อ/ประมวลผลข้อมูล: ${error.message}`);
+                throw error;
+            }
+        }
+
+        // --- User Management Logic (initUsers function from admin_dashboard.html) ---
+        async function initUsers() {
+            const tableBody = document.getElementById('users-table-body');
+            const searchInput = document.getElementById('user-search');
+            const searchBtn = document.getElementById('user-search-btn');
+            const resetSearchBtn = document.getElementById('user-reset-search-btn');
+            const addUserBtn = document.getElementById('add-user-btn');
+            const userDetailModal = document.getElementById('user-detail-modal');
+            const userDetailForm = document.getElementById('user-detail-form');
+            const userDeleteBtn = document.getElementById('user-delete-btn');
+
+            let allUsers = []; // Cache for current filtered/searched users
+
+            async function loadUsers(query = {}) {
+                tableBody.innerHTML = `<tr><td colspan="7" class="text-center">กำลังโหลดผู้ใช้งาน...</td></tr>`;
+                try {
+                    const users = await callApi('getUsers', 'GET', query);
+                    allUsers = users;
+                    renderUsers(users);
+                } catch (error) {
+                    console.error("Error loading users:", error);
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดผู้ใช้งาน</td></tr>`;
+                }
+            }
+
+            function renderUsers(usersToRender) {
+                console.log("Users to render:", usersToRender);
+
+                if (!Array.isArray(usersToRender) || usersToRender.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="7" class="text-center">ไม่พบผู้ใช้งาน</td></tr>`;
+                    return;
+                }
+                
+                tableBody.innerHTML = usersToRender.map(user => `
+                    <tr>
+                        <td>${user.lineId || user.id || '-'}</td>
+                        <td>${user.name || '-'}</td>
+                        <td>${user.phone || '-'}</td>
+                        <td>${user.point || 0}</td>
+                        <td>${user.level || '-'}</td>
+                        <td>${user.signupDate || '-'}</td>
+                        <td>
+                            <button class="btn btn-sm btn-info view-user-btn" data-lineid="${user.lineId || user.id}">ดู/แก้ไข</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                document.querySelectorAll('.view-user-btn').forEach(button => {
+                    button.onclick = (e) => showUserDetail(e.target.dataset.lineid);
+                });
+            }
+
+            async function showUserDetail(lineId) {
+                const user = allUsers.find(u => (u.lineId || u.id) === lineId);
+                
+                document.getElementById('user-modal-title').textContent = user ? `แก้ไขผู้ใช้งาน: ${user.name || user.lineId || user.id}` : 'เพิ่มผู้ใช้งานใหม่';
+                userDetailForm.reset(); // Clear form
+
+                const userModalLineIdHiddenInput = document.getElementById('user-modal-lineid-hidden');
+                const userModalDisplayLineIdInput = document.getElementById('user-modal-display-lineid');
+                const userModalNameInput = document.getElementById('user-modal-name');
+                const userModalPhoneInput = document.getElementById('user-modal-phone');
+                const userModalEmailInput = document.getElementById('user-modal-email');
+                const userModalAddressInput = document.getElementById('user-modal-address');
+                const userModalNoteInput = document.getElementById('user-modal-note');
+                const userModalPointInput = document.getElementById('user-modal-point');
+                const userModalLevelInput = document.getElementById('user-modal-level');
+
+                if (user) { // Edit existing user
+                    userModalLineIdHiddenInput.value = user.lineId || user.id; // Store actual ID in hidden field
+                    userModalDisplayLineIdInput.value = user.lineId || user.id; // Display it
+                    userModalDisplayLineIdInput.readOnly = true; // Make Line ID read-only for existing users
+                    userModalDisplayLineIdInput.classList.add('cursor-not-allowed');
+
+                    userModalNameInput.value = user.name || '';
+                    userModalPhoneInput.value = user.phone || '';
+                    userModalEmailInput.value = user.email || '';
+                    userModalAddressInput.value = user.address || '';
+                    userModalNoteInput.value = user.note || '';
+                    userModalPointInput.value = user.point || 0;
+                    userModalLevelInput.value = user.level || 'Member';
+                    userDeleteBtn.classList.remove('hidden'); // Show delete button
+                } else { // New user
+                    userModalLineIdHiddenInput.value = ''; // Ensure hidden ID is empty for new user
+                    userModalDisplayLineIdInput.value = ''; // Allow admin to type Line ID or leave blank
+                    userModalDisplayLineIdInput.readOnly = false; // Allow typing Line ID for new user
+                    userModalDisplayLineIdInput.classList.remove('cursor-not-allowed');
+
+                    userModalPointInput.value = 0; // Default
+                    userModalLevelInput.value = 'Member'; // Default
+                    userDeleteBtn.classList.add('hidden'); // Hide delete button
+                }
+                userDetailModal.showModal();
+            }
+
+            userDetailForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const lineIdFromHidden = document.getElementById('user-modal-lineid-hidden').value; // Actual ID from loaded data
+                const lineIdFromDisplay = document.getElementById('user-modal-display-lineid').value.trim(); // User-entered ID
+
+                const isNewUser = !lineIdFromHidden; // If hidden ID is empty, it's a new user (even if admin typed in display field)
+                
+                let actualLineId = lineIdFromHidden; // Assume update for existing user
+                let action = 'updateUserAdmin';
+
+                if (isNewUser) { // If adding a new user
+                    if (!lineIdFromDisplay) { // If admin didn't type a Line ID for new user, let backend generate (if allowed)
+                        actualLineId = ''; // Send empty string, backend will handle auto-gen or throw error
+                    } else {
+                        actualLineId = lineIdFromDisplay; // Use admin-provided Line ID for new user
+                    }
+                    action = 'registerAdmin'; // Use specific admin registration action
+                }
+                
+                const userData = {
+                    lineId: actualLineId, // This is what the backend will use
+                    name: document.getElementById('user-modal-name').value,
+                    phone: document.getElementById('user-modal-phone').value,
+                    email: document.getElementById('user-modal-email').value,
+                    address: document.getElementById('user-modal-address').value,
+                    note: document.getElementById('user-modal-note').value,
+                    point: parseInt(document.getElementById('user-modal-point').value, 10),
+                    level: document.getElementById('user-modal-level').value
+                };
+
+                const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNewUser ? 'เพิ่ม' : 'อัปเดต'} ผู้ใช้งานนี้หรือไม่?`);
+                if (!confirmed) return;
+
+                try {
+                    const res = await callApi(action, 'POST', userData, false);
+                    showAlert('สถานะ', res, () => {
+                        userDetailModal.close();
+                        loadUsers();
+                    });
+                } catch (error) {
+                    // Error handled in callApi
+                }
+            };
+
+            userDeleteBtn.onclick = async () => {
+                const lineId = document.getElementById('user-modal-lineid-hidden').value;
+                const confirmed = await showConfirm('ยืนยันการลบ', `คุณแน่ใจหรือไม่ที่จะลบผู้ใช้งาน Line ID: ${lineId}? การดำเนินการนี้ไม่สามารถย้อนกลับได้`);
+                if (!confirmed) return;
+
+                try {
+                    const res = await callApi('deleteUser', 'POST', { lineId: lineId }, false);
+                    showAlert('สถานะ', res, () => {
+                        userDetailModal.close();
+                        loadUsers();
+                    });
+                } catch (error) {
+                    // Error handled in callApi
+                }
+            };
+
+            addUserBtn.onclick = () => {
+                showUserDetail(null); // Call with null to indicate new user
+            };
+
+            searchBtn.onclick = () => {
+                const query = searchInput.value.trim();
+                loadUsers({ query: query });
+            };
+
+            resetSearchBtn.onclick = () => {
+                searchInput.value = '';
+                loadUsers();
+            };
+
+            // --- Main Initialization for this page ---
+            document.addEventListener('DOMContentLoaded', initUsers);
+        }
+        initUsers(); // Call initUsers directly to start the page. (DOMContentLoaded event listener is also valid)
+
+    </script>
+</body>
+</html>
