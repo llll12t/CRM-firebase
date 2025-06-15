@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="th" data-theme="light">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin - จัดการกิจกรรม</title>
+    <script src="config.js"></script> 
+    <link href="https://cdn.jsdelivr.net/npm/daisyui@latest/dist/full.css" rel="stylesheet" type="text/css" />
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <style>
+        .hidden { display: none !important; }
+        body { display: flex; min-height: 100vh; font-family: sans-serif; background-color: #f8fafc; }
+        #sidebar { width: 250px; background-color: #e2e8f0; color: #1a202c; padding: 20px; flex-shrink: 0; border-right: 1px solid #cbd5e0; }
+        #main-content { flex-grow: 1; padding: 20px; background-color: #ffffff; }
+        #sidebar a { 
+            display: block; padding: 10px; margin-bottom: 5px; border-radius: 5px; 
+            background-color: #4a5568; 
+            color: white; text-decoration: none; transition: background-color 0.2s;
+            font-weight: 500;
+        }
+        #sidebar a:hover { background-color: #2d3748; }
+        #sidebar a.active { background-color: #1a202c; } 
+
+        .tab-content { padding: 20px 0; }
+        .table-container { overflow-x: auto; }
+        table { width: 100%; border-collapse: collapse; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; vertical-align: top; }
+        th { background-color: #edf2f7; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; margin-bottom: 5px; font-weight: bold; color: #333; }
+        .form-group input[type="text"], .form-group input[type="number"], 
+        .form-group input[type="email"], .form-group input[type="tel"],
+        .form-group input[type="date"], .form-group textarea,
+        .form-group .input, .form-group .textarea, .form-group .select { 
+            width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px; 
+            box-sizing: border-box; 
+        }
+        .input.input-bordered, .textarea.textarea-bordered, .select.select-bordered {
+            border-color: #d1d5db; 
+        }
+        .btn { transition: background-color 0.2s, color 0.2s; }
+        .btn.btn-neutral { background-color: #1a202c; color: white; border-color: #1a202c; }
+        .btn.btn-neutral:hover { background-color: #2d3748; border-color: #2d3748; }
+    </style>
+</head>
+<body>
+
+    <div id="sidebar">
+        <h1 class="text-2xl font-bold mb-8 text-center text-gray-800">Admin Panel</h1>
+        <nav>
+            <a href="users.html" id="nav-users">ผู้ใช้งาน</a>
+            <a href="items.html" id="nav-items">สินค้า/ของรางวัล</a>
+            <a href="events.html" class="active" id="nav-events">กิจกรรม</a>
+            <a href="codes.html" id="nav-codes">โค้ด</a>
+            <a href="history.html" id="nav-history">ประวัติ</a>
+        </nav>
+    </div>
+
+    <div id="main-content" class="min-h-screen">
+        <h2 id="page-title" class="text-3xl font-bold mb-6 text-gray-800">จัดการกิจกรรม</h2>
+        
+        <div class="tab-content">
+            <h3 class="text-2xl font-semibold mb-4">กิจกรรม</h3>
+            <button id="add-event-btn" class="btn btn-success mb-4">เพิ่มกิจกรรมใหม่</button>
+            <div class="table-container bg-white p-4 rounded shadow">
+                <table class="table w-full">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>ชื่อกิจกรรม</th>
+                            <th>แต้มที่ได้</th>
+                            <th>คำอธิบาย</th>
+                            <th>รูปภาพ (URL)</th>
+                            <th>การดำเนินการ</th>
+                        </tr>
+                    </thead>
+                    <tbody id="events-table-body">
+                        <tr><td colspan="6" class="text-center">กำลังโหลดกิจกรรม...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <dialog id="event-detail-modal" class="modal">
+                <div class="modal-box max-w-xl">
+                    <h3 class="font-bold text-lg" id="event-modal-title"></h3>
+                    <form id="event-detail-form" class="py-4 space-y-3">
+                        <input type="hidden" id="event-modal-id">
+                        <div class="form-group">
+                            <label>ID:</label>
+                            <input type="text" id="event-modal-display-id" class="input input-bordered">
+                            <small class="text-gray-500">สามารถระบุ ID เอง (เช่น EVT001) หรือปล่อยว่างเพื่อสร้างอัตโนมัติ</small>
+                        </div>
+                        <div class="form-group">
+                            <label>ชื่อกิจกรรม:</label>
+                            <input type="text" id="event-modal-title-input" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>แต้มที่ได้:</label>
+                            <input type="number" id="event-modal-point" class="input input-bordered">
+                        </div>
+                        <div class="form-group">
+                            <label>คำอธิบาย:</label>
+                            <textarea id="event-modal-desc" class="textarea textarea-bordered"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label>URL รูปภาพ:</label>
+                            <input type="text" id="event-modal-image" class="input input-bordered">
+                            <img id="event-image-preview" src="" alt="Image Preview" class="mt-2 w-32 h-32 object-cover hidden rounded">
+                        </div>
+                        <div class="modal-action">
+                            <button type="submit" class="btn btn-neutral">บันทึก</button>
+                            <button type="button" class="btn btn-ghost" onclick="document.getElementById('event-detail-modal').close()">ยกเลิก</button>
+                            <button type="button" id="event-delete-btn" class="btn btn-error hidden">ลบ</button>
+                        </div>
+                    </form>
+                </div>
+            </dialog>
+        </div>
+    </div>
+
+    <!-- Common Alert Dialog -->
+    <dialog id="customAlertDialog" class="modal">
+        <div class="modal-box text-center">
+            <h3 id="customAlertTitle" class="font-bold text-lg mb-3"></h3>
+            <p id="customAlertMessage" class="py-4 whitespace-pre-line"></p>
+            <div class="modal-action justify-center">
+                <button id="customAlertButton" class="btn btn-neutral w-full">ตกลง</button>
+            </div>
+        </div>
+    </dialog>
+
+    <!-- Common Confirm Dialog -->
+    <dialog id="customConfirmDialog" class="modal">
+        <div class="modal-box text-center">
+            <h3 id="customConfirmTitle" class="font-bold text-lg mb-3"></h3>
+            <p id="customConfirmMessage" class="py-4"></p>
+            <div class="modal-action justify-around">
+                <button id="customConfirmCancelButton" class="btn btn-outline btn-neutral">ยกเลิก</button>
+                <button id="customConfirmConfirmButton" class="btn btn-neutral">ยืนยัน</button>
+            </div>
+        </div>
+    </dialog>
+
+    <script>
+        // --- Common Helpers (Duplicated in each file) ---
+        const alertDialog = document.getElementById('customAlertDialog');
+        const alertT = document.getElementById('customAlertTitle');
+        const alertM = document.getElementById('customAlertMessage');
+        const alertBtn = document.getElementById('customAlertButton');
+
+        const confirmDialog = document.getElementById('customConfirmDialog');
+        const confT = document.getElementById('customConfirmTitle');
+        const confM = document.getElementById('customConfirmMessage');
+        const okBtn = document.getElementById('customConfirmConfirmButton');
+        const noBtn = document.getElementById('customConfirmCancelButton');
+
+        function showAlert(title, message, cb) {
+            alertT.textContent = title;
+            alertM.textContent = message;
+            alertDialog.showModal();
+
+            const hide = () => {
+                alertDialog.close();
+                alertBtn.removeEventListener('click', hide);
+                cb && cb();
+            };
+            alertBtn.addEventListener('click', hide);
+        }
+
+        function showConfirm(title, message) {
+            return new Promise(res => {
+                confT.textContent = title;
+                confM.textContent = message;
+                confirmDialog.showModal();
+
+                const onOk = () => { cleanup(); res(true); };
+                const onNo = () => { cleanup(); res(false); };
+
+                function cleanup() {
+                    confirmDialog.close();
+                    okBtn.removeEventListener('click', onOk);
+                    noBtn.removeEventListener('click', onNo);
+                }
+                okBtn.addEventListener('click', onOk);
+                noBtn.addEventListener('click', noBtn);
+            });
+        }
+
+        async function callApi(action, method = 'GET', data = null, expectJson = true) {
+            let url;
+            let options = { method: method };
+
+            if (method === 'GET') {
+                url = `${CONFIG.CLOUD_FUNCTION_GET_URL}?action=${action}`;
+                if (data) {
+                    const params = new URLSearchParams(data).toString();
+                    url += `&${params}`;
+                }
+            } else { 
+                url = CONFIG.CLOUD_FUNCTION_POST_URL;
+                options.headers = {
+                    'Content-Type': 'application/json',
+                };
+                options.body = JSON.stringify({ action: action, ...data });
+            }
+
+            try {
+                const response = await fetch(url, options);
+                if (!response.ok) {
+                    let errorBody;
+                    try {
+                        errorBody = await response.json();
+                    } catch {
+                        errorBody = { error: await response.text() }; 
+                    }
+                    throw new Error(`HTTP Error! Status: ${response.status} - ${errorBody.error || errorBody}`);
+                }
+                
+                if (expectJson) {
+                    return await response.json();
+                } else {
+                    return await response.text();
+                }
+            } catch (error) {
+                console.error("API call failed:", error);
+                showAlert("ข้อผิดพลาด API", `ไม่สามารถเชื่อมต่อ/ประมวลผลข้อมูล: ${error.message}`);
+                throw error;
+            }
+        }
+        // --- End Common Helpers ---
+
+
+        // --- Event Management Logic (Specific to events.html) ---
+        document.addEventListener('DOMContentLoaded', () => {
+            const tableBody = document.getElementById('events-table-body');
+            const addEventBtn = document.getElementById('add-event-btn');
+            const eventDetailModal = document.getElementById('event-detail-modal');
+            const eventDetailForm = document.getElementById('event-detail-form');
+            const eventDeleteBtn = document.getElementById('event-delete-btn');
+            const eventImagePreview = document.getElementById('event-image-preview');
+            const eventModalIdInput = document.getElementById('event-modal-id');
+            const eventModalDisplayIdInput = document.getElementById('event-modal-display-id');
+            const eventModalImageInput = document.getElementById('event-modal-image');
+
+            let allEvents = [];
+
+            // Highlight active sidebar link for this page
+            document.getElementById('nav-events').classList.add('active');
+
+
+            async function loadEvents() {
+                tableBody.innerHTML = `<tr><td colspan="6" class="text-center">กำลังโหลดกิจกรรม...</td></tr>`;
+                try {
+                    const events = await callApi('getEvents', 'GET');
+                    allEvents = events;
+                    renderEvents(events);
+                } catch (error) {
+                    console.error("Error loading events:", error);
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center text-red-500">เกิดข้อผิดพลาดในการโหลดกิจกรรม</td></tr>`;
+                }
+            }
+
+            function renderEvents(eventsToRender) {
+                if (eventsToRender.length === 0) {
+                    tableBody.innerHTML = `<tr><td colspan="6" class="text-center">ไม่พบกิจกรรม</td></tr>`;
+                    return;
+                }
+                tableBody.innerHTML = eventsToRender.map(event => `
+                    <tr>
+                        <td>${event.id || '-'}</td>
+                        <td>${event.title || '-'}</td>
+                        <td>${event.point || 0}</td>
+                        <td>${event.desc || '-'}</td>
+                        <td><img src="${event.image}" class="w-12 h-12 object-cover rounded" onerror="this.style.display='none';"></td>
+                        <td>
+                            <button class="btn btn-sm btn-info view-event-btn" data-id="${event.id}">ดู/แก้ไข</button>
+                        </td>
+                    </tr>
+                `).join('');
+
+                document.querySelectorAll('.view-event-btn').forEach(button => {
+                    button.onclick = (e) => showEventDetail(e.target.dataset.id);
+                });
+            }
+
+            function showEventDetail(id) {
+                const event = allEvents.find(e => e.id === id);
+                document.getElementById('event-modal-title').textContent = event ? `แก้ไขกิจกรรม: ${event.title}` : 'เพิ่มกิจกรรมใหม่';
+                eventDetailForm.reset();
+                eventImagePreview.classList.add('hidden');
+                eventDeleteBtn.classList.add('hidden');
+
+                if (event) {
+                    eventModalIdInput.value = event.id;
+                    eventModalDisplayIdInput.value = event.id;
+                    eventModalDisplayIdInput.readOnly = true;
+                    eventModalDisplayIdInput.classList.add('cursor-not-allowed');
+
+                    document.getElementById('event-modal-title-input').value = event.title;
+                    document.getElementById('event-modal-point').value = event.point;
+                    document.getElementById('event-modal-desc').value = event.desc;
+                    eventModalImageInput.value = event.image;
+                    if (event.image) {
+                        eventImagePreview.src = event.image;
+                        eventImagePreview.classList.remove('hidden');
+                    }
+                    eventDeleteBtn.classList.remove('hidden');
+                } else { 
+                    eventModalIdInput.value = '';
+                    eventModalDisplayIdInput.value = '';
+                    eventModalDisplayIdInput.readOnly = false;
+                    eventModalDisplayIdInput.classList.remove('cursor-not-allowed');
+                }
+                eventDetailModal.showModal();
+            }
+
+            eventDetailForm.onsubmit = async (e) => {
+                e.preventDefault();
+                const id = document.getElementById('event-modal-id').value;
+                const displayId = document.getElementById('event-modal-display-id').value.trim();
+                const isNew = !id;
+
+                let actualId = id;
+                let action = 'updateEvent';
+
+                if (isNew) {
+                    actualId = displayId;
+                    action = 'addEvent';
+                }
+
+                const eventData = {
+                    id: actualId,
+                    title: document.getElementById('event-modal-title-input').value,
+                    point: parseInt(document.getElementById('event-modal-point').value, 10),
+                    desc: document.getElementById('event-modal-desc').value,
+                    image: document.getElementById('event-modal-image').value
+                };
+
+                const confirmed = await showConfirm('ยืนยันการบันทึก', `คุณต้องการ ${isNew ? 'เพิ่ม' : 'อัปเดต'} กิจกรรมนี้หรือไม่?`);
+                if (!confirmed) return;
+
+                try {
+                    const res = await callApi(action, 'POST', eventData, false);
+                    showAlert('สถานะ', res, () => {
+                        eventDetailModal.close();
+                        loadEvents();
+                    });
+                } catch (error) {}
+            };
+
+            eventDeleteBtn.onclick = async () => {
+                const id = document.getElementById('event-modal-id').value;
+                const confirmed = await showConfirm('ยืนยันการลบ', `คุณแน่ใจหรือไม่ที่จะลบกิจกรรม ID: ${id}?`);
+                if (!confirmed) return;
+
+                try {
+                    const res = await callApi('deleteEvent', 'POST', { id: id }, false); 
+                    showAlert('สถานะ', res, () => {
+                        eventDetailModal.close();
+                        loadEvents();
+                    });
+                } catch (error) {}
+            };
+
+            addEventBtn.onclick = () => showEventDetail(null);
+            eventModalImageInput.oninput = () => {
+                if (eventModalImageInput.value) {
+                    eventImagePreview.src = eventModalImageInput.value;
+                    eventImagePreview.classList.remove('hidden');
+                } else {
+                    eventImagePreview.classList.add('hidden');
+                }
+            };
+
+            loadEvents();
+        });
+    </script>
+</body>
+</html>
